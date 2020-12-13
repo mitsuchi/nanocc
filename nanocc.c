@@ -119,7 +119,7 @@ Token *tokenize(char *p) {
       p++;
       continue;
     }
-
+    // 2文字の記号
     if (starts_with(p, "==") || starts_with(p, "!=")
       || starts_with(p, "<=") || starts_with(p, ">=")
     ) {
@@ -127,11 +127,8 @@ Token *tokenize(char *p) {
       p += 2;
       continue;
     }
-    if (*p == '+' || *p == '-'
-      || *p == '*' || *p == '/'
-      || *p == '(' || *p == ')'
-      || *p == '<' || *p == '>'
-    ) {
+    // 1文字の記号
+    if (strchr("+-*/()<>", *p)) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     }
