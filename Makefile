@@ -12,8 +12,7 @@ docker-run:
 			docker run -it -v $(CURDIR):/nanocc --name nanocc nanocc:1
 
 docker-test:
-			docker run -v $(CURDIR):/nanocc --name nanocc nanocc:1 make test
-			docker rm nanocc
+			docker run --rm -v $(CURDIR):/nanocc --name nanocc nanocc:1 make test
 
 docker-rm:
 			docker rm nanocc
