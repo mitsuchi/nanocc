@@ -93,6 +93,10 @@ bool at_eof() {
   return token->kind == TK_EOF;
 }
 
+bool starts_with(char *p, char *q) {
+  return memcmp(p, q, strlen(q)) == 0;
+}
+
 // 新しいトークンを作成してcurに繋げる
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   Token *tok = calloc(1, sizeof(Token));
@@ -116,8 +120,8 @@ Token *tokenize(char *p) {
       continue;
     }
 
-    if (strncmp(p, "==", 2) == 0 || strncmp(p, "!=", 2) == 0
-      || strncmp(p, "<=", 2) == 0 || strncmp(p, ">=", 2) == 0
+    if (starts_with(p, "==") || starts_with(p, "!=")
+      || starts_with(p, "<=") || starts_with(p, ">=")
     ) {
       cur = new_token(TK_RESERVED, cur, p, 2);
       p += 2;
