@@ -24,5 +24,8 @@ assert 5 "1*2+3"
 assert 2 "1+2*3/4"
 assert 14 "2*(3+4)"
 assert 94 "2*(3+(4*(5+6)))"
+assert 2 "-3+5"
+assert 2 "-(3+5)+10"
+assert 5 "-3*+5 + 20"
 
 echo OK
