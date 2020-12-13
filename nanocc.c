@@ -104,6 +104,7 @@ Token *tokenize(char *p) {
 
     if ( *p == '+' || *p == '-'
       || *p == '*' || *p == '/'
+      || *p == '(' || *p == ')'
     ) {
       cur = new_token(TK_RESERVED, cur, p++);
       continue;
@@ -164,6 +165,13 @@ Node *new_node_num(int val) {
 
 Node *num();
 Node *mul();
+Node *primary();
+
+// 全体の EBNF
+// expr = mul ('+' mul | '-' mul)*
+// mul = primary ('*' primary | '/' primary)*
+// primary = '(' expr ')' | num
+// num := [1-9][0-9]*
 
 // 式をパーズする
 // expr = mul ('+' mul | '-' mul)*
@@ -181,18 +189,32 @@ Node *expr() {
 }
 
 // 掛け算と割り算の項をパーズする
-// mul = num ('*' num | '*' num)*
+// mul = primary ('*' primary | '*' primary)*
 Node *mul() {
-  Node *node = num();
+  Node *node = primary();
 
   for (;;) {
     if (consume('*'))
-      node = new_node(ND_MUL, node, num());
+      node = new_node(ND_MUL, node, primary());
     else if (consume('/'))
-      node = new_node(ND_DIV, node, num());
+      node = new_node(ND_DIV, node, primary());
     else
       return node;
   }
+}
+
+// 数値かカッコ式をパーズする
+// primary = '(' expr ')' | num
+Node *primary() {
+  // カッコが来てればカッコに挟まれた式
+  if (consume('(')) {
+    Node *node = expr();
+    expect(')');
+    return node;
+  }
+
+  // そうでなければ数値のはず
+  return num();
 }
 
 // 数値をパーズする
