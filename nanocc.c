@@ -102,7 +102,9 @@ Token *tokenize(char *p) {
       continue;
     }
 
-    if (*p == '+' || *p == '-') {
+    if ( *p == '+' || *p == '-'
+      || *p == '*' || *p == '/'
+    ) {
       cur = new_token(TK_RESERVED, cur, p++);
       continue;
     }
@@ -124,6 +126,8 @@ Token *tokenize(char *p) {
 typedef enum {
   ND_ADD, // +
   ND_SUB, // -
+  ND_MUL, // *
+  ND_DIV, // /
   ND_NUM, // 整数
 } NodeKind;
 
@@ -159,17 +163,33 @@ Node *new_node_num(int val) {
 }
 
 Node *num();
+Node *mul();
 
 // 式をパーズする
-// expr = num ('+' num | '-' num)*
+// expr = mul ('+' mul | '-' mul)*
 Node *expr() {
-  Node *node = num();
+  Node *node = mul();
 
   for (;;) {
     if (consume('+'))
-      node = new_node(ND_ADD, node, num());
+      node = new_node(ND_ADD, node, mul());
     else if (consume('-'))
-      node = new_node(ND_SUB, node, num());
+      node = new_node(ND_SUB, node, mul());
+    else
+      return node;
+  }
+}
+
+// 掛け算と割り算の項をパーズする
+// mul = num ('*' num | '*' num)*
+Node *mul() {
+  Node *node = num();
+
+  for (;;) {
+    if (consume('*'))
+      node = new_node(ND_MUL, node, num());
+    else if (consume('/'))
+      node = new_node(ND_DIV, node, num());
     else
       return node;
   }
@@ -209,6 +229,20 @@ void gen(Node *node) {
   case ND_SUB:
     // 左辺 - 右辺
     printf("  sub rax, rdi\n");
+    break;
+  case ND_MUL:
+    // imul は素直な掛け算
+    // mul は mul src	=> RDX:RAX = RAX * src となる128bitの掛け算
+    printf("  imul rax, rdi\n");
+    break;
+  case ND_DIV:
+    // 割り算は 128bit に拡張するやつしかない
+    // idiv は次のようになる
+    // RAX = RDX:RAX / r64
+    // RDX = RDX:RAX % r64
+    // なので cqo で RAXを128ビットに符号拡張してRDX:RAXにストア する
+    printf("  cqo\n");
+    printf("  idiv rdi\n");
     break;
   }
 
