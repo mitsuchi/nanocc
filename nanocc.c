@@ -26,7 +26,7 @@ struct Token {
   Token *next;    // 次の入力トークン
   int val;        // kindがTK_NUMの場合、その数値
   char *str;      // 文字列の開始位置
-  int len;        // 文字列の長さ（記号のときだけ意味をもつ）
+  int len;        // 文字列の長さ
 };
 
 // 現在着目しているトークン
@@ -135,7 +135,10 @@ Token *tokenize(char *p) {
 
     if (isdigit(*p)) {
       cur = new_token(TK_NUM, cur, p, 0);
+      char *q = p;
       cur->val = strtol(p, &p, 10);
+      // ポインタが進んだ分が桁数
+      cur->len = p - q;
       continue;
     }
 
