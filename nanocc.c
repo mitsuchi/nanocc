@@ -116,6 +116,13 @@ Token *tokenize(char *p) {
       continue;
     }
 
+    if (strncmp(p, "==", 2) == 0 || strncmp(p, "!=", 2) == 0
+      || strncmp(p, "<=", 2) == 0 || strncmp(p, ">=", 2) == 0
+    ) {
+      cur = new_token(TK_RESERVED, cur, p, 2);
+      p += 2;
+      continue;
+    }
     if (*p == '+' || *p == '-'
       || *p == '*' || *p == '/'
       || *p == '(' || *p == ')'
@@ -144,6 +151,10 @@ typedef enum {
   ND_SUB, // -
   ND_MUL, // *
   ND_DIV, // /
+  ND_EQ, // ==
+  ND_NEQ, // !=
+  ND_LT, // <
+  ND_LTE, // <=
   ND_NUM, // 整数
 } NodeKind;
 
@@ -178,21 +189,70 @@ Node *new_node_num(int val) {
   return node;
 }
 
-Node *num();
+Node *expr();
+Node *equality();
+Node *relational();
+Node *add();
 Node *mul();
 Node *unary();
 Node *primary();
+Node *num();
 
 // 全体の EBNF
-// expr = mul ('+' mul | '-' mul)*
-// mul = unary ('*' unary | '/' unary)*
-// unary   = ("+" | "-")? primary
-// primary = '(' expr ')' | num
+// expr       = equality
+// equality   = relational ("==" relational | "!=" relational)*
+// relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+// add        = mul ("+" mul | "-" mul)*
+// mul        = unary ("*" unary | "/" unary)*
+// unary      = ("+" | "-")? primary
+// primary    = num | "(" expr ")"
 // num := [1-9][0-9]*
 
 // 式をパーズする
-// expr = mul ('+' mul | '-' mul)*
+// expr       = equality
 Node *expr() {
+  return equality();
+}
+
+// 等式または不等式をパーズする
+// equality   = relational ("==" relational | "!=" relational)*
+Node *equality() {
+  Node *node = relational();
+
+  for (;;) {
+    if (consume("=="))
+      node = new_node(ND_EQ, node, relational());
+    else if (consume("!="))
+      node = new_node(ND_NEQ, node, relational());
+    else
+      return node;
+  }
+}
+
+// 不等式をパーズする
+// relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+Node *relational() {
+  Node *node = add();
+
+  for (;;) {
+    if (consume("<"))
+      node = new_node(ND_LT, node, add());
+    else if (consume("<="))
+      node = new_node(ND_LTE, node, add());
+    else if (consume(">"))
+      // > は左辺と右辺を逆転した < としてしまう
+      node = new_node(ND_LT, add(), node);
+    else if (consume(">="))
+      // >= は左辺と右辺を逆転した <= としてしまう
+      node = new_node(ND_LTE, add(), node);
+    else
+      return node;
+  }
+}
+
+// 足し算と引き算の項をパーズする
+// add        = mul ("+" mul | "-" mul)*
+Node *add() {
   Node *node = mul();
 
   for (;;) {
@@ -298,6 +358,36 @@ void gen(Node *node) {
     // なので cqo で RAXを128ビットに符号拡張してRDX:RAXにストア する
     printf("  cqo\n");
     printf("  idiv rdi\n");
+    break;
+  // == 
+  case ND_EQ:
+    // 等しさを比べる
+    printf("  cmp rax, rdi\n");
+    // 結果を al レジスタに入れる。al は rax の下位8bit の別名
+    printf("  sete al\n");
+    // rax 全体を 0 か 1 にしたいので、rax の上位 56 bit を 0クリアする
+    printf("  movzb rax, al\n");
+    break;
+  // != 
+  case ND_NEQ:
+    // cmp, setne で等しくなさを比べる 
+    printf("  cmp rax, rdi\n");
+    printf("  setne al\n");
+    printf("  movzb rax, al\n");
+    break;
+  // <
+  case ND_LT:
+    // cmp, setl で < での大小比較を行う
+    printf("  cmp rax, rdi\n");
+    printf("  setl al\n");
+    printf("  movzb rax, al\n");
+    break;
+  // <=
+  case ND_LTE:
+    // cmp, setl で <= での大小比較を行う
+    printf("  cmp rax, rdi\n");
+    printf("  setle al\n");
+    printf("  movzb rax, al\n");
     break;
   }
 
