@@ -1,11 +1,53 @@
 #include "nanocc.h"
 
+// 左辺値の表すアドレスをスタックに積むコードを出力する
+void gen_lval(Node *node) {
+  if (node->kind != ND_LVAR)
+    error("代入の左辺値が変数ではありません");
+
+  // rax にベースポインタをもってくる
+  printf("  mov rax, rbp\n");
+  // ベースポインタからその変数へのオフセットを引くことで、変数のアドレスを得る
+  printf("  sub rax, %d\n", node->offset);
+  // 変数のアドレスをスタックに積む
+  printf("  push rax\n");
+}
+
 // ASTからアセンブリを出力する
 void gen(Node *node) {
-  // 数値なら push する
-  if (node->kind == ND_NUM) {
+  // 値なら push する
+  switch (node->kind) {
+  // 数値
+  case ND_NUM:
     printf("  push %d\n", node->val);
     return;
+  // 左辺値
+  case ND_LVAR:
+    // 左辺値の指すアドレスをスタックに積むコードを生成
+    gen_lval(node);
+    // 左辺値の指すアドレスを rax に持ってくる
+    printf("  pop rax\n");
+    // アドレスの指す値を rax に持ってくる
+    printf("  mov rax, [rax]\n");
+    // 持ってきた値をスタックに積む
+    printf("  push rax\n");
+    return;
+  // 代入式
+  case ND_ASSIGN:
+    // まず左辺のアドレスをスタックに積む
+    gen_lval(node->lhs);
+    // 右辺値をスタックに積む
+    gen(node->rhs);
+
+    // 右辺値を rdi に持ってくる
+    printf("  pop rdi\n");
+    // 左辺値のアドレスを rax に持ってくる
+    printf("  pop rax\n");
+    // 左辺値のアドレスに右辺値の値をストアする
+    printf("  mov [rax], rdi\n");
+    // 右辺値をスタックに積む。つまり代入式の値は右辺値。
+    printf("  push rdi\n");
+    return;   
   }
 
   // 二項演算なら左辺と右辺がそれぞれ最終的に
@@ -71,7 +113,7 @@ void gen(Node *node) {
     printf("  cmp rax, rdi\n");
     printf("  setle al\n");
     printf("  movzb rax, al\n");
-    break;
+    break; 
   }
 
   printf("  push rax\n");

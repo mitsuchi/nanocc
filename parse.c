@@ -1,5 +1,15 @@
 #include "nanocc.h"
 
+// エラーを報告するための関数
+// printfと同じ引数を取る
+void error(char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
+  exit(1);
+}
+
 // エラー箇所を報告する
 // エラー箇所を指すポインタと、残りは printfと同じ引数を取る
 void error_at(char *loc, char *fmt, ...) {
@@ -28,6 +38,19 @@ bool consume(char *op) {
     return false;
   token = token->next;
   return true;
+}
+
+// 次のトークンが識別子のときには、トークンを1つ読み進めてから
+// もとの識別子トークンを返す。そうでない場合には NULL を返す。
+Token *consume_ident() {
+  // トークンの種類が識別子なら
+  if (token->kind == TK_IDENT) {
+    Token *ident_token = token;
+    token = token->next;
+    return ident_token;
+  }
+
+  return NULL;
 }
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進める。
@@ -93,8 +116,14 @@ Token *tokenize(char *p) {
       continue;
     }
     // 1文字の記号
-    if (strchr("+-*/()<>", *p)) {
+    if (strchr("+-*/()<>=;", *p)) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
+      continue;
+    }
+    // 1文字のアルファベット
+    if ('a' <= *p && *p <= 'z') {
+      cur = new_token(TK_IDENT, cur, p++, 1);
+      cur->len = 1;
       continue;
     }
 
@@ -135,7 +164,9 @@ Node *new_node_num(int val) {
   return node;
 }
 
+Node *stmt();
 Node *expr();
+Node *assign();
 Node *equality();
 Node *relational();
 Node *add();
@@ -145,19 +176,38 @@ Node *primary();
 Node *num();
 
 // 全体の EBNF
-// expr       = equality
+// program    = stmt*
+// stmt       = expr ";"
+// expr       = assign
+// assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
 // relational = add ("<" add | "<=" add | ">" add | ">=" add)*
 // add        = mul ("+" mul | "-" mul)*
 // mul        = unary ("*" unary | "/" unary)*
 // unary      = ("+" | "-")? primary
-// primary    = num | "(" expr ")"
-// num := [1-9][0-9]*
+// primary    = num | ident | "(" expr ")"
+
+// プログラムをパーズする
+// program    = stmt*
+void program() {
+  int i = 0;
+  while (!at_eof())
+    code[i++] = stmt();
+  code[i] = NULL;
+}
+
+// 文をパーズする
+// stmt       = expr ";"
+Node *stmt() {
+  Node *node = expr();
+  expect(";");
+  return node;
+}
 
 // 式をパーズする
-// expr       = equality
+// expr       = assign
 Node *expr() {
-  return equality();
+  return assign();
 }
 
 // 等式または不等式をパーズする
@@ -252,6 +302,17 @@ Node *primary() {
     return node;
   }
 
+  // アルファベットが来てれば識別子
+  Token *tok = consume_ident();
+  if (tok) {
+    // 変数の指す値を入れる領域を確保する
+    Node *node = calloc(1, sizeof(Node));
+    // ASTノードの種類を左辺値とする
+    node->kind = ND_LVAR;
+    // ベースポインターからのオフセットは、いまは決めうちでアルファベット順とする
+    node->offset = (tok->str[0] - 'a' + 1) * 8;
+    return node;
+  }
   // そうでなければ数値のはず
   return num();
 }
@@ -261,4 +322,13 @@ Node *primary() {
 Node *num() {
   // 次のトークンとして数値を期待して消費し、その数値を取得して数値ノードを作る
   return new_node_num(expect_number());
+}
+
+// 代入式をパーズする
+// assign     = equality ("=" assign)?
+Node *assign() {
+  Node *node = equality();
+  if (consume("="))
+    node = new_node(ND_ASSIGN, node, assign());
+  return node;
 }
