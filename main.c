@@ -6,6 +6,10 @@ char *user_input;
 // 現在着目しているトークン の定義
 Token *token;
 
+// ローカル変数リストの先頭アドレスを覚えておく
+// 新しい要素は先頭につないでいくので、先頭アドレスは最後に足した要素を指す
+LVar *locals = NULL;
+
 // argc はコンパイラーへの引数の数(+1)
 // argv は引数の文字列の先頭へのポインターを納めた配列へのポインター
 int main(int argc, char **argv) {
@@ -31,10 +35,14 @@ int main(int argc, char **argv) {
   printf("main:\n");
 
   // プロローグ
-  // 変数26個分の領域を確保する
+  // 現時点のスタックベースポインタをスタックに積む
   printf("  push rbp\n");
+  // 現在のスタックの先頭をベースポインタとする
   printf("  mov rbp, rsp\n");
-  printf("  sub rsp, 208\n");
+  // 変数分の領域を確保する
+  if (locals) {
+    printf("  sub rsp, %d\n", locals->offset);
+  }
 
   // 先頭の式から順にコード生成
   for (int i = 0; code[i]; i++) {

@@ -73,3 +73,18 @@ Node *code[100];
 // エラーを報告するための関数
 // printfと同じ引数を取る
 void error(char *fmt, ...);
+
+// ローカル変数 Local Var を LVar という型で表す
+typedef struct LVar LVar;
+
+// ローカル変数の型
+struct LVar {
+  LVar *next; // 次の変数かNULL
+  char *name; // 変数の名前
+  int len;    // 名前の長さ
+  int offset; // RBPからのオフセット
+};
+
+// ローカル変数リストの先頭アドレスを覚えておく
+// 新しい要素は先頭につないでいくので、先頭アドレスは最後に足した要素を指す
+LVar *locals;

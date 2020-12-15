@@ -1,5 +1,16 @@
 #include "nanocc.h"
 
+// 変数を名前で検索する。見つからなかった場合はNULLを返す。
+LVar *find_lvar(Token *tok) {
+  // 変数名のリストを先頭から順に見ていって
+  for (LVar *var = locals; var; var = var->next)
+    // 既存のものと長さが一緒で文字列が一緒ならそれを返す
+    if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
+      return var;
+  // 見つからなければNULLを返す
+  return NULL;
+}
+
 // エラーを報告するための関数
 // printfと同じ引数を取る
 void error(char *fmt, ...) {
@@ -120,10 +131,18 @@ Token *tokenize(char *p) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     }
-    // 1文字のアルファベット
+    // 1文字のアルファベットを見つけたら
     if ('a' <= *p && *p <= 'z') {
-      cur = new_token(TK_IDENT, cur, p++, 1);
-      cur->len = 1;
+      // 開始位置を覚えておいて
+      char *p0 = p;
+      p++;
+      // アルファベットが続く限り読み進める
+      while ('a' <= *p && *p <= 'z') {
+        p++;
+      }
+      // p0 から p - p0 文字の長さの名前の識別子トークンとして追加する
+      cur = new_token(TK_IDENT, cur, p0, p - p0);
+      cur->len = p - p0;
       continue;
     }
 
@@ -309,8 +328,34 @@ Node *primary() {
     Node *node = calloc(1, sizeof(Node));
     // ASTノードの種類を左辺値とする
     node->kind = ND_LVAR;
-    // ベースポインターからのオフセットは、いまは決めうちでアルファベット順とする
-    node->offset = (tok->str[0] - 'a' + 1) * 8;
+    // ベースポインターからのオフセットを決めるために、
+    // これまでのローカル変数リストから変数名を探す
+    LVar *lvar = find_lvar(tok);
+    if (lvar) {
+      // 見つかればオフセットはそれと同じになる
+      node->offset = lvar->offset;
+    } else {
+      // 新しい変数名であれば、変数名リストに追加する
+      lvar = calloc(1, sizeof(LVar));
+      // 新しい要素は先頭につなぐ
+      lvar->next = locals;
+      // 変数名はトークンが持つ値をそのまま使う
+      lvar->name = tok->str;
+      // 変数名の長さも同じ
+      lvar->len = tok->len;
+      // 変数名のスタックベースからのオフセットは、
+      // 最後に追加された変数のオフセット + 8にする
+      if (locals) {
+        lvar->offset = locals->offset + 8;
+      } else {
+        // 最初に見つかった変数ならオフセットは 8 にする
+        lvar->offset = 8;
+      }
+      // ASTノードに持つオフセットはそれを使う
+      node->offset = lvar->offset;
+      // 変数リストの先頭アドレスをいま追加したものとする
+      locals = lvar;
+    }
     return node;
   }
   // そうでなければ数値のはず
