@@ -16,6 +16,9 @@ assert() {
   fi
 }
 
+assert 3 "if (1 < 2) 3;;"; # 最新のテストほど先頭に持ってくるように変更
+assert 3 "if (1 < 2) 3; else 4;;";
+assert 4 "if (2 < 1) 3; else 4;;";
 assert 0 "0;"
 assert 42 "42;"
 assert 21 "5+20-4;"

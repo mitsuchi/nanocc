@@ -156,6 +156,18 @@ Token *tokenize(char *p) {
       p += 6;
       continue;
     }
+    // if だったらそれを返す
+    if (strncmp(p, "if", 2) == 0 && !is_alnum(p[2])) {
+      cur = new_token(TK_IF, cur, p, 2);
+      p += 2;
+      continue;
+    }
+    // else だったらそれを返す
+    if (strncmp(p, "else", 4) == 0 && !is_alnum(p[4])) {
+      cur = new_token(TK_ELSE, cur, p, 4);
+      p += 4;
+      continue;
+    }
     // 1文字のアルファベットを見つけたら
     if ('a' <= *p && *p <= 'z') {
       // 開始位置を覚えておいて
@@ -221,7 +233,9 @@ Node *num();
 
 // 全体の EBNF
 // program    = stmt*
-// stmt       = expr ";" | "return" expr ";"
+// stmt       = expr ";"
+//            | "return" expr ";"
+//            | "if" "(" expr ")" stmt ("else" stmt)?
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -241,11 +255,22 @@ void program() {
 }
 
 // 文をパーズする
-// stmt       = expr ";" | return expr ";"
+// stmt       = expr ";"
+//            | "return" expr ";"
+//            | "if" "(" expr ")" stmt ("else" stmt)?
 Node *stmt() {
   Node *node;
   if (consume_reserved(TK_RETURN)) {
     node = new_node(ND_RETURN, expr(), NULL);
+  } else if (consume_reserved(TK_IF)) {
+    node = new_node(ND_IF, NULL, NULL);
+    expect("(");
+    node->cond = expr();
+    expect(")");
+    node->lhs = stmt();
+    if (consume_reserved(TK_ELSE)) {
+      node->rhs = stmt();
+    }
   } else {
     node = expr();
   }

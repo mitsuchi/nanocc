@@ -15,6 +15,8 @@ void gen_lval(Node *node) {
 
 // ASTからアセンブリを出力する
 void gen(Node *node) {
+  // ラベルの末尾につける通し番号
+  int label_id = 1;
   // 値なら push する
   switch (node->kind) {
   // 数値
@@ -67,6 +69,34 @@ void gen(Node *node) {
     printf("  pop rbp\n");
     // rax に持っている値を返し、戻りアドレスに戻る
     printf("  ret\n");
+    return;
+  // if
+    case ND_IF:
+    // 条件式 をコンパイルしてスタックトップに積む
+    gen(node->cond);
+    // 条件式を 0 を比較する
+    printf("  pop rax\n");
+    printf("  cmp rax, 0\n");
+    // else がない場合
+    if (node->rhs == NULL) {
+      // 条件が偽ならなにもせず抜ける
+      printf("  je .Lend%d\n", label_id);
+      // 条件が真なら then 部分を計算
+      gen(node->lhs);
+    } else {
+      // else がある場合
+      // 条件が偽なら else へジャンプ
+      printf("  je .Lelse%d\n", label_id);
+      // 条件が真なら then 部分を計算して抜ける
+      gen(node->lhs);
+      printf("  jmp .Lend%d\n", label_id);
+      // 偽の場合は else 部分を計算する
+      printf(".Lelse%d:\n", label_id);
+      gen(node->rhs);
+    }
+    printf(".Lend%d:\n", label_id);
+    // 通し番号を足しておく
+    label_id++;
     return;
   }
 

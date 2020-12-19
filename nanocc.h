@@ -25,6 +25,7 @@ typedef enum {
   ND_ASSIGN, // =
   ND_LVAR,   // ローカル変数
   ND_RETURN, // return
+  ND_IF, // if
 } NodeKind;
 
 typedef struct Node Node;
@@ -32,8 +33,9 @@ typedef struct Node Node;
 // 抽象構文木のノードの型
 struct Node {
   NodeKind kind; // ノードの型
-  Node *lhs;     // 左辺
-  Node *rhs;     // 右辺
+  Node *lhs;     // 左辺。if のときは then 式
+  Node *rhs;     // 右辺。if のときは else 式
+  Node *cond;    // if のときだけ使う。条件式。
   int val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う。RBPからその変数へのオフセット。
 };
@@ -43,6 +45,8 @@ typedef enum {
   TK_RESERVED, // 記号
   TK_IDENT,    // 識別子
   TK_RETURN,   // return
+  TK_IF,       // if
+  TK_ELSE,     // else
   TK_NUM,      // 整数トークン
   TK_EOF,      // 入力の終わりを表すトークン
 } TokenKind;
