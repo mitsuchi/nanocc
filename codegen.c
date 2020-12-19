@@ -98,6 +98,24 @@ void gen(Node *node) {
     // 通し番号を足しておく
     label_id++;
     return;
+  // while
+  case ND_WHILE:
+    printf(".Lbegin%d:\n", label_id);
+    // 条件式をコンパイル
+    gen(node->cond);
+    // 条件式を 0 と比較する
+    printf("  pop rax\n");
+    printf("  cmp rax, 0\n");
+    // 条件が偽なら end へジャンプ
+    printf("  je .Lend%d\n", label_id);
+    // 本体をコンパイル
+    gen(node->lhs);
+    // whileの最初に戻る
+    printf("  jmp .Lbegin%d\n", label_id);
+    printf(".Lend%d:\n", label_id);
+    // 通し番号を足しておく
+    label_id++;
+    return;
   }
 
   // 二項演算なら左辺と右辺がそれぞれ最終的に

@@ -16,6 +16,7 @@ assert() {
   fi
 }
 
+assert 8 "a = 1; while (a < 5) a = a + a;; return a;"
 assert 3 "if (1 < 2) 3;;"; # 最新のテストほど先頭に持ってくるように変更
 assert 3 "if (1 < 2) 3; else 4;;";
 assert 4 "if (2 < 1) 3; else 4;;";

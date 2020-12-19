@@ -168,6 +168,12 @@ Token *tokenize(char *p) {
       p += 4;
       continue;
     }
+    // while 
+    if (strncmp(p, "while", 5) == 0 && !is_alnum(p[5])) {
+      cur = new_token(TK_WHILE, cur, p, 5);
+      p += 5;
+      continue;
+    }
     // 1文字のアルファベットを見つけたら
     if ('a' <= *p && *p <= 'z') {
       // 開始位置を覚えておいて
@@ -236,6 +242,7 @@ Node *num();
 // stmt       = expr ";"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
+//            | "while" "(" expr ")" stmt
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -258,6 +265,7 @@ void program() {
 // stmt       = expr ";"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
+//            | "while" "(" expr ")" stmt
 Node *stmt() {
   Node *node;
   if (consume_reserved(TK_RETURN)) {
@@ -271,6 +279,12 @@ Node *stmt() {
     if (consume_reserved(TK_ELSE)) {
       node->rhs = stmt();
     }
+  } else if (consume_reserved(TK_WHILE)) {
+    node = new_node(ND_WHILE, NULL, NULL);
+    expect("(");
+    node->cond = expr();
+    expect(")");
+    node->lhs = stmt();
   } else {
     node = expr();
   }
