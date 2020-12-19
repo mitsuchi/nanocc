@@ -19,6 +19,8 @@ void gen(Node *node) {
   int label_id = 1;
   // ブロック中の現在注目する文
   Node *cur_stmt;
+  // 関数名
+  char func_name[255];
 
   // 値なら push する
   switch (node->kind) {
@@ -154,6 +156,12 @@ void gen(Node *node) {
         printf("  pop rax\n");
       }
     }
+    return;
+  // 関数呼び出し
+  case ND_CALL:
+    // 関数名をコピーしてくる
+    strncpy(func_name, node->str, node->len);
+    printf("  call %s\n", func_name);
     return;
   }
 

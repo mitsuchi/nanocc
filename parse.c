@@ -258,7 +258,10 @@ Node *num();
 // add        = mul ("+" mul | "-" mul)*
 // mul        = unary ("*" unary | "/" unary)*
 // unary      = ("+" | "-")? primary
-// primary    = num | ident | "(" expr ")"
+// primary    = num
+//            | ident
+//            | ident ("(" ")")?
+//            | "(" expr ")"
 
 // プログラムをパーズする
 // program    = stmt*
@@ -433,7 +436,10 @@ Node *unary() {
 }
 
 // 数値かカッコ式をパーズする
-// primary = '(' expr ')' | num
+// primary    = num
+//            | ident
+//            | ident ("(" ")")?
+//            | "(" expr ")"
 Node *primary() {
   // カッコが来てればカッコに挟まれた式
   if (consume("(")) {
@@ -442,9 +448,20 @@ Node *primary() {
     return node;
   }
 
-  // アルファベットが来てれば識別子
+  // アルファベットが来てれば識別子または関数呼び出し
   Token *tok = consume_ident();
-  if (tok) {
+
+  // 識別子がきて、つぎが "(" なら関数呼び出し
+  if (tok && consume("(")) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_CALL;
+    node->str = tok->str;
+    node->len = tok->len;
+    expect(")");
+    return node;
+  } else if (tok) {
+    // 関数呼び出しでなければただの識別子
+
     // 変数の指す値を入れる領域を確保する
     Node *node = calloc(1, sizeof(Node));
     // ASTノードの種類を左辺値とする

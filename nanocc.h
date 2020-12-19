@@ -29,6 +29,7 @@ typedef enum {
   ND_WHILE, // while
   ND_FOR, // for
   ND_BLOCK, // ブロック
+  ND_CALL, // 関数呼び出し
 } NodeKind;
 
 typedef struct Node Node;
@@ -43,6 +44,8 @@ struct Node {
   Node *next;    // ブロック のときのみ使う。次の文へのポインタ。
   int val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う。RBPからその変数へのオフセット。
+  char *str;     // 関数呼び出しのときだけ使う。関数名の文字列の開始位置
+  int len;       // 関数呼び出しのときだけ使う。関数名の文字列の長さ
 };
 
 // トークンの種類
