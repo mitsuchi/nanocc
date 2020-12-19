@@ -71,7 +71,7 @@ void gen(Node *node) {
     printf("  ret\n");
     return;
   // if
-    case ND_IF:
+  case ND_IF:
     // 条件式 をコンパイルしてスタックトップに積む
     gen(node->cond);
     // 条件式を 0 を比較する
