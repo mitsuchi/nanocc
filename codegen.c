@@ -17,6 +17,9 @@ void gen_lval(Node *node) {
 void gen(Node *node) {
   // ラベルの末尾につける通し番号
   int label_id = 1;
+  // ブロック中の現在注目する文
+  Node *cur_stmt;
+
   // 値なら push する
   switch (node->kind) {
   // 数値
@@ -136,6 +139,21 @@ void gen(Node *node) {
     printf("  jmp .Lbegin%d\n", label_id);
     printf(".Lend%d:\n", label_id);
     label_id++;
+    return;
+  // ブロック
+  case ND_BLOCK:
+    // いま注目している文を指しておく
+    cur_stmt = node->next;
+    while (cur_stmt != NULL) {
+      // 文を1つコンパイルする
+      gen(cur_stmt);
+      // 次の文に進む
+      cur_stmt = cur_stmt->next;
+      if (cur_stmt != NULL) {
+        // 最後の文以外では、積んだ値はムダなので捨てる
+        printf("  pop rax\n");
+      }
+    }
     return;
   }
 

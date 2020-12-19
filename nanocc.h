@@ -28,6 +28,7 @@ typedef enum {
   ND_IF, // if
   ND_WHILE, // while
   ND_FOR, // for
+  ND_BLOCK, // ブロック
 } NodeKind;
 
 typedef struct Node Node;
@@ -39,6 +40,7 @@ struct Node {
   Node *rhs;     // 右辺。if のときは else 式。for では増加式。
   Node *cond;    // if と while, for のときは条件式。
   Node *body;    // while のときのみ使う、本体。
+  Node *next;    // ブロック のときのみ使う。次の文へのポインタ。
   int val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う。RBPからその変数へのオフセット。
 };

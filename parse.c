@@ -146,7 +146,7 @@ Token *tokenize(char *p) {
       continue;
     }
     // 1文字の記号
-    if (strchr("+-*/()<>=;", *p)) {
+    if (strchr("+-*/(){}<>=;", *p)) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     }
@@ -246,6 +246,7 @@ Node *num();
 // 全体の EBNF
 // program    = stmt*
 // stmt       = expr ";"
+//            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
 //            | "while" "(" expr ")" stmt
@@ -270,15 +271,34 @@ void program() {
 
 // 文をパーズする
 // stmt       = expr ";"
+//            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
 //            | "while" "(" expr ")" stmt
 //            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 Node *stmt() {
   Node *node;
+  // block
+  if (consume("{")) {
+    // ブロックを表すノードを用意する
+    // node->next で複数の文をつないでいく
+    node = new_node(ND_BLOCK, NULL, NULL);
+    // 文のリストの最後を指しておく
+    Node *last = node;
+    while (!consume("}")) {
+      // 文を1つパーズしてノードをつくる
+      Node *cur_node = stmt();
+      // それを文のリストにつなげる
+      last->next = cur_node;
+      // 最後を交代する
+      last = cur_node;
+    }
+    // 終末の次はNULLにしておく
+    last->next = NULL;
   // return
-  if (consume_reserved(TK_RETURN)) {
+  } else if (consume_reserved(TK_RETURN)) {
     node = new_node(ND_RETURN, expr(), NULL);
+    expect(";");
   // if
   } else if (consume_reserved(TK_IF)) {
     node = new_node(ND_IF, NULL, NULL);
@@ -319,8 +339,8 @@ Node *stmt() {
     node->body = stmt();
   } else {
     node = expr();
+    expect(";");
   }
-  expect(";");
   return node;
 }
 

@@ -16,13 +16,17 @@ assert() {
   fi
 }
 
-assert 45 "b = 0; for (a = 0; a < 10; a = a + 1) b = b + a;; return b;"
-assert 8 "a = 1; while (a < 5) a = a + a;; return a;"
-assert 3 "if (1 < 2) 3;;"; # 最新のテストほど先頭に持ってくるように変更
-assert 3 "if (1 < 2) 3; else 4;;";
-assert 4 "if (2 < 1) 3; else 4;;";
+assert 3 "{1+2;}"
+assert 7 "{1+2;3+4;}"
+assert 45 "a = 0; b = 0; while (a < 9) {a = a + 1; b = b + a;} return b;"
+assert 45 "b = 0; for (a = 0; a < 10; a = a + 1) b = b + a; return b;"
+assert 8 "a = 1; while (a < 5) a = a + a; return a;"
+assert 3 "if (1 < 2) 3;"; # 最新のテストほど先頭に持ってくるように変更
+assert 3 "if (1 < 2) 3; else 4;";
+assert 4 "if (2 < 1) 3; else 4;";
 assert 0 "0;"
 assert 42 "42;"
+assert 25 "5+20;"
 assert 21 "5+20-4;"
 assert 7 "1+2*3;"
 assert 5 "1*2+3;"
