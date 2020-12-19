@@ -174,6 +174,12 @@ Token *tokenize(char *p) {
       p += 5;
       continue;
     }
+    // for
+    if (strncmp(p, "for", 3) == 0 && !is_alnum(p[3])) {
+      cur = new_token(TK_FOR, cur, p, 3);
+      p += 3;
+      continue;
+    }
     // 1文字のアルファベットを見つけたら
     if ('a' <= *p && *p <= 'z') {
       // 開始位置を覚えておいて
@@ -243,6 +249,7 @@ Node *num();
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
 //            | "while" "(" expr ")" stmt
+//            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -266,10 +273,13 @@ void program() {
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
 //            | "while" "(" expr ")" stmt
+//            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 Node *stmt() {
   Node *node;
+  // return
   if (consume_reserved(TK_RETURN)) {
     node = new_node(ND_RETURN, expr(), NULL);
+  // if
   } else if (consume_reserved(TK_IF)) {
     node = new_node(ND_IF, NULL, NULL);
     expect("(");
@@ -279,12 +289,34 @@ Node *stmt() {
     if (consume_reserved(TK_ELSE)) {
       node->rhs = stmt();
     }
+  // while
   } else if (consume_reserved(TK_WHILE)) {
     node = new_node(ND_WHILE, NULL, NULL);
     expect("(");
     node->cond = expr();
     expect(")");
     node->lhs = stmt();
+  // for 
+  // "for" "(" expr? ";" expr? ";" expr? ")" stmt
+  } else if (consume_reserved(TK_FOR)) {
+    node = new_node(ND_FOR, NULL, NULL);
+    expect("(");
+    if (!consume(";")) {
+      node->lhs = expr(); // lhs に初期化式を入れる
+      expect(";");
+    }
+    if (!consume(";")) {
+      node->cond = expr(); // cond にループ条件を入れる
+      expect(";");
+    } else {
+      // 条件式が空だったら常に真で1にしておく
+      node->cond = new_node_num(1);
+    }
+    if (!consume(")")) {
+      node->rhs = expr(); // rhs に増加式を入れる
+      expect(")");
+    }
+    node->body = stmt();
   } else {
     node = expr();
   }

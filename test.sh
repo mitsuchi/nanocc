@@ -16,6 +16,7 @@ assert() {
   fi
 }
 
+assert 45 "b = 0; for (a = 0; a < 10; a = a + 1) b = b + a;; return b;"
 assert 8 "a = 1; while (a < 5) a = a + a;; return a;"
 assert 3 "if (1 < 2) 3;;"; # 最新のテストほど先頭に持ってくるように変更
 assert 3 "if (1 < 2) 3; else 4;;";

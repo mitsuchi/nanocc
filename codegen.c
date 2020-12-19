@@ -116,6 +116,27 @@ void gen(Node *node) {
     // 通し番号を足しておく
     label_id++;
     return;
+  // for
+  case ND_FOR:
+    // 初期化式をコンパイル
+    gen(node->lhs); 
+    printf(".Lbegin%d:\n", label_id);
+    // 条件式をコンパイル
+    gen(node->cond);
+    // 条件式を 0 と比較する
+    printf("  pop rax\n");
+    printf("  cmp rax, 0\n");
+    // 条件が偽なら end へジャンプ
+    printf("  je .Lend%d\n", label_id);
+    // 本体をコンパイル
+    gen(node->body);
+    // 増加式をコンパイル
+    gen(node->rhs);
+    // ループの最初に戻る
+    printf("  jmp .Lbegin%d\n", label_id);
+    printf(".Lend%d:\n", label_id);
+    label_id++;
+    return;
   }
 
   // 二項演算なら左辺と右辺がそれぞれ最終的に
