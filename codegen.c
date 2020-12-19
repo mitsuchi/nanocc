@@ -176,8 +176,14 @@ void gen(Node *node) {
     // 関数名をコピーしてくる
     strncpy(func_name, node->str, node->len);
     // rsp が16の倍数になっていなければムダに push する
-    //printf("  push 0");
+    printf("  mov rbx, rsp\n"); // rbx に rsp を持ってくる
+    printf("  and rbx, 15\n");  // 0xFF とandをとって0なら16の倍数
+    printf("  cmp rbx, 0\n");   // 0 と比べる
+    printf("  je .Lend%d\n", label_id); // 0じゃなければ16の倍数じゃない
+    printf("  push 0\n"); // ムダに push して16の倍数にそろえる
+    printf(".Lend%d:\n", label_id);
     printf("  call %s\n", func_name);
+    label_id++;
     return;
   }
 
