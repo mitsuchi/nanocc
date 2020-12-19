@@ -47,7 +47,27 @@ void gen(Node *node) {
     printf("  mov [rax], rdi\n");
     // 右辺値をスタックに積む。つまり代入式の値は右辺値。
     printf("  push rdi\n");
-    return;   
+    return; 
+  // return
+  case ND_RETURN:
+    // return 式 の 式を積む
+    gen(node->lhs);
+    // 返すべき値を rax に取ってきて
+    printf("  pop rax\n");
+    // ここからエピローグ。スタックは現時点でこうなっている。
+    // 戻りアドレス
+    // 呼び出し時点の rbp <- rbp
+    // 変数群
+    // ..               <- rsp
+    // 返すべき式
+    
+    // 関数呼び出し時点のベースポインタをスタックポインタが指すようにして
+    printf("  mov rsp, rbp\n");
+    // ベースポインタを呼び出し時点のものに戻す
+    printf("  pop rbp\n");
+    // rax に持っている値を返し、戻りアドレスに戻る
+    printf("  ret\n");
+    return;
   }
 
   // 二項演算なら左辺と右辺がそれぞれ最終的に

@@ -51,6 +51,17 @@ bool consume(char *op) {
   return true;
 }
 
+// 次のトークンが期待している予約語のときには、トークンを1つ読み進めて
+// 真を返す。それ以外の場合には偽を返す。
+bool consume_reserved(int kind) {
+  // トークンの種類がそもそも記号でないか
+  if (token->kind == kind) {
+    token = token->next;
+    return true;
+  }
+  return false;
+}
+
 // 次のトークンが識別子のときには、トークンを1つ読み進めてから
 // もとの識別子トークンを返す。そうでない場合には NULL を返す。
 Token *consume_ident() {
@@ -63,6 +74,7 @@ Token *consume_ident() {
 
   return NULL;
 }
+
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
@@ -94,6 +106,13 @@ bool at_eof() {
 
 bool starts_with(char *p, char *q) {
   return memcmp(p, q, strlen(q)) == 0;
+}
+
+int is_alnum(char c) {
+  return ('a' <= c && c <= 'z') ||
+         ('A' <= c && c <= 'Z') ||
+         ('0' <= c && c <= '9') ||
+         (c == '_');
 }
 
 // 新しいトークンを作成してcurに繋げる
@@ -129,6 +148,12 @@ Token *tokenize(char *p) {
     // 1文字の記号
     if (strchr("+-*/()<>=;", *p)) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
+      continue;
+    }
+    // return だったらそれを返す
+    if (strncmp(p, "return", 6) == 0 && !is_alnum(p[6])) {
+      cur = new_token(TK_RETURN, cur, p, 6);
+      p += 6;
       continue;
     }
     // 1文字のアルファベットを見つけたら
@@ -196,7 +221,7 @@ Node *num();
 
 // 全体の EBNF
 // program    = stmt*
-// stmt       = expr ";"
+// stmt       = expr ";" | "return" expr ";"
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -216,9 +241,14 @@ void program() {
 }
 
 // 文をパーズする
-// stmt       = expr ";"
+// stmt       = expr ";" | return expr ";"
 Node *stmt() {
-  Node *node = expr();
+  Node *node;
+  if (consume_reserved(TK_RETURN)) {
+    node = new_node(ND_RETURN, expr(), NULL);
+  } else {
+    node = expr();
+  }
   expect(";");
   return node;
 }

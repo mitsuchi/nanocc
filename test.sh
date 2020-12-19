@@ -44,5 +44,7 @@ assert 1 "10 >= 9;"
 assert 1 "10 >= 10;"
 assert 0 "10 >= 11;"
 assert 14 "a = 3; b = 5 * 6 - 8; a + b / 2;"
+assert 42 "return 42;";
+assert 31 "return 5*6+1; 42;";
 
 echo OK
