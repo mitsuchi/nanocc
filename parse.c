@@ -146,7 +146,7 @@ Token *tokenize(char *p) {
       continue;
     }
     // 1文字の記号
-    if (strchr("+-*/(){}<>=;", *p)) {
+    if (strchr("+-*/(){}<>=;,", *p)) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     }
@@ -260,7 +260,7 @@ Node *num();
 // unary      = ("+" | "-")? primary
 // primary    = num
 //            | ident
-//            | ident ("(" ")")?
+//            | ident ("(" expr? ("," expr)* ")")?
 //            | "(" expr ")"
 
 // プログラムをパーズする
@@ -437,8 +437,7 @@ Node *unary() {
 
 // 数値かカッコ式をパーズする
 // primary    = num
-//            | ident
-//            | ident ("(" ")")?
+//            | ident ("(" expr? ("," expr)* ")")?
 //            | "(" expr ")"
 Node *primary() {
   // カッコが来てればカッコに挟まれた式
@@ -457,7 +456,16 @@ Node *primary() {
     node->kind = ND_CALL;
     node->str = tok->str;
     node->len = tok->len;
-    expect(")");
+    int i = 0;
+    // (expr ("," expr)*)? ")")
+    // 次が ")" でないのなら式が続く
+    while (!consume(")")) {
+      // 次は式のはず
+      node->args[i++] = expr();
+      // "," が来たら読み捨てる
+      consume(",");
+    }
+    node->argc = i;
     return node;
   } else if (tok) {
     // 関数呼び出しでなければただの識別子

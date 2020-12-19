@@ -21,6 +21,10 @@ void gen(Node *node) {
   Node *cur_stmt;
   // 関数名
   char func_name[255];
+  // ABI に定められた引数を格納するべきレジスター群
+  char *arg_registers[6] = {
+    "rdi", "rsi", "rdx", "rcx", "r8", "r9"
+  };
 
   // 値なら push する
   switch (node->kind) {
@@ -159,8 +163,20 @@ void gen(Node *node) {
     return;
   // 関数呼び出し
   case ND_CALL:
+    // 引数を順にコンパイルする
+    for (int i = 0; i < node->argc; i++) {
+      gen(node->args[i]);
+    }
+    // ABIで定められた各レジスタに pop する
+    for (int i = node->argc - 1; i >= 0; i--) {
+      printf("  pop %s\n", arg_registers[i]);
+    }
+    // rax には引数の個数を入れる
+    printf("  mov rax, %d\n", node->argc);
     // 関数名をコピーしてくる
     strncpy(func_name, node->str, node->len);
+    // rsp が16の倍数になっていなければムダに push する
+    //printf("  push 0");
     printf("  call %s\n", func_name);
     return;
   }
