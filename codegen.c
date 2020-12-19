@@ -74,7 +74,7 @@ void gen(Node *node) {
   case ND_IF:
     // 条件式 をコンパイルしてスタックトップに積む
     gen(node->cond);
-    // 条件式を 0 を比較する
+    // 条件式を 0 と比較する
     printf("  pop rax\n");
     printf("  cmp rax, 0\n");
     // else がない場合
