@@ -75,6 +75,15 @@ Token *consume_ident() {
   return NULL;
 }
 
+// 次のトークンが識別子の場合、トークンを1つ読み進めてその数値を返す。
+// 識別子トークンを返す。それ以外の場合にはエラーを報告する。
+Token *expect_ident() {
+  if (token->kind != TK_IDENT)
+    error_at(token->str, "識別子ではありません");
+  Token *ident_token = token;
+  token = token->next;
+  return ident_token;
+}
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
@@ -232,6 +241,7 @@ Node *new_node_num(int val) {
   return node;
 }
 
+Node *func_def();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -244,7 +254,8 @@ Node *primary();
 Node *num();
 
 // 全体の EBNF
-// program    = stmt*
+// program    = func_def*
+// func_def   = ident ("(" ident? ("," ident)* ")")? "{" stmt* "}"
 // stmt       = expr ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
@@ -264,12 +275,69 @@ Node *num();
 //            | "(" expr ")"
 
 // プログラムをパーズする
-// program    = stmt*
+// program    = func_def*
 void program() {
   int i = 0;
   while (!at_eof())
-    code[i++] = stmt();
-  code[i] = NULL;
+    func_defs[i++] = func_def();
+  func_defs[i] = NULL;
+}
+
+// 関数定義をパーズする
+// func_def   = ident ("(" ident? ("," ident)* ")")? "{" stmt* "}"
+Node *func_def() {
+  // 識別子がくるはず
+  Token *tok = expect_ident();
+
+  // "(" が来るはず
+  expect("(");
+
+  // 関数定義のノードを作る
+  Node *node = calloc(1, sizeof(Node));
+  node->kind = ND_FUNC_DEF;
+  node->str = tok->str; // 関数名
+  node->len = tok->len; // 関数名の長さ
+  int i = 0;
+  // (ident ("," ident)*)? ")")
+  // 次が ")" でないのなら識別子が続く
+  while (!consume(")")) {
+    // 次は識別子のはず
+    tok = expect_ident();
+    // 仮引数の文字列を入れる領域を確保する
+    Node *param = calloc(1, sizeof(Node));
+    // ASTノードの種類を仮引数とする
+    param->kind = ND_PARAM;
+    // 仮引数名はトークンが持つ値をそのまま使う
+    param->str = tok->str;
+    // 仮引数名の長さも同じ
+    param->len = tok->len;
+    // 仮引数を関数定義に追加する
+    node->args[i++] = param;
+    // "," が来たら読み捨てる
+    consume(",");
+  }
+  node->argc = i;
+
+  // ブロックが来るはず
+  expect("{");
+  // ブロックを表すノードを用意する
+  // node->next で複数の文をつないでいく
+  Node *block = new_node(ND_BLOCK, NULL, NULL);
+  // 文のリストの最後を指しておく
+  Node *last = block;
+  while (!consume("}")) {
+    // 文を1つパーズしてノードをつくる
+    Node *cur_node = stmt();
+    // それを文のリストにつなげる
+    last->next = cur_node;
+    // 最後を交代する
+    last = cur_node;
+  }
+  // 終末の次はNULLにしておく
+  last->next = NULL;
+  // 関数定義の本体をブロックにする
+  node->body = block;
+  return node;
 }
 
 // 文をパーズする

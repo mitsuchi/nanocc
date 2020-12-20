@@ -30,6 +30,8 @@ typedef enum {
   ND_FOR, // for
   ND_BLOCK, // ブロック
   ND_CALL, // 関数呼び出し
+  ND_FUNC_DEF, // 関数定義
+  ND_PARAM, // 仮引数
 } NodeKind;
 
 typedef struct Node Node;
@@ -40,14 +42,16 @@ struct Node {
   Node *lhs;     // 左辺。if のときは then 式。while のときは本体。for なら初期化式。
   Node *rhs;     // 右辺。if のときは else 式。for では増加式。
   Node *cond;    // if と while, for のときは条件式。
-  Node *body;    // while のときのみ使う、本体。
+  Node *body;    // while と関数定義のときのみ使う。本体。
   Node *next;    // ブロック のときのみ使う。次の文へのポインタ。
   int val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う。RBPからその変数へのオフセット。
-  char *str;     // 関数呼び出しのときだけ使う。関数名の文字列の開始位置
-  int len;       // 関数呼び出しのときだけ使う。関数名の文字列の長さ
-  Node *args[6];  // 関数呼び出しのときだけ。引数、最大6つ分の配列
-  int argc;       // 関数呼び出しのときだけ。引数の個数。
+  char *str;     // 関数呼び出しと定義のときだけ使う。関数名の文字列の開始位置
+  int len;       // 関数呼び出しと定義のときだけ使う。関数名の文字列の長さ
+  Node *args[6];  // 関数呼び出しのときは、実引数を入れる、最大6つ分の配列
+                  // 関数定義のときは、仮引数を入れる。
+  int argc;       // 関数呼び出しのときは、実引数の個数。
+                  // 関数定義のときは、仮引数の個数
 };
 
 // トークンの種類
@@ -106,3 +110,6 @@ struct LVar {
 // ローカル変数リストの先頭アドレスを覚えておく
 // 新しい要素は先頭につないでいくので、先頭アドレスは最後に足した要素を指す
 LVar *locals;
+
+// トップレベルにある関数定義の並びを入れておく
+Node *func_defs[100];

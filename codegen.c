@@ -185,6 +185,33 @@ void gen(Node *node) {
     printf("  call %s\n", func_name);
     label_id++;
     return;
+  // 関数定義
+  case ND_FUNC_DEF:
+    // 関数名をコピーしてくる
+    strncpy(func_name, node->str, node->len);
+    // 関数をリンク時に外のファイルから見れるようにする
+    printf(".globl %s\n", func_name);
+    // ラベルを出力する
+    printf("%s:\n", func_name);
+    // プロローグ
+    // 現時点のスタックベースポインタをスタックに積む
+    printf("  push rbp\n");
+    // 現在のスタックの先頭をベースポインタとする
+    printf("  mov rbp, rsp\n");
+    // 変数分の領域を確保する
+    if (locals) {
+      printf("  sub rsp, %d\n", locals->offset);
+    }
+    // 本体であるブロックをコンパイルする
+    gen(node->body);
+    // エピローグ
+    // 関数呼び出し時点のベースポインタをスタックから取得し
+    printf("  mov rsp, rbp\n");
+    // ベースポインタをそれに戻す
+    printf("  pop rbp\n");
+    // 最後の式の結果がRAXに残っているのでそれが返り値になる  
+    printf("  ret\n");
+    return;
   }
 
   // 二項演算なら左辺と右辺がそれぞれ最終的に

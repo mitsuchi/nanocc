@@ -29,37 +29,12 @@ int main(int argc, char **argv) {
 
   // intel記法を使う
   printf(".intel_syntax noprefix\n");
-  // main をリンク時に外のファイルから見れるようにする
-  printf(".globl main\n");
-  // main ラベル
-  printf("main:\n");
 
-  // プロローグ
-  // 現時点のスタックベースポインタをスタックに積む
-  printf("  push rbp\n");
-  // 現在のスタックの先頭をベースポインタとする
-  printf("  mov rbp, rsp\n");
-  // 変数分の領域を確保する
-  if (locals) {
-    printf("  sub rsp, %d\n", locals->offset);
+  // 先頭の関数定義から順にコード生成
+  for (int i = 0; func_defs[i]; i++) {
+     gen(func_defs[i]);
   }
 
-  // 先頭の式から順にコード生成
-  for (int i = 0; code[i]; i++) {
-    gen(code[i]);
-
-    // 式の評価結果としてスタックに一つの値が残っている
-    // はずなので、スタックが溢れないようにポップしておく
-    printf("  pop rax\n");
-  }    
-
-  // エピローグ
-  // 関数呼び出し時点のベースポインタをスタックから取得し
-  printf("  mov rsp, rbp\n");
-  // ベースポインタをそれに戻す
-  printf("  pop rbp\n");
-  // 最後の式の結果がRAXに残っているのでそれが返り値になる  
-  printf("  ret\n");
   // 正常終了コードを返す
   return 0;
 }
