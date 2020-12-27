@@ -221,6 +221,23 @@ void gen(Node *node) {
     // 最後の式の結果がRAXに残っているのでそれが返り値になる  
     printf("  ret\n");
     return;
+  // & 変数名のアドレス
+  case ND_ADDR:
+    // 変数は lhs に入っている
+    // 変数のアドレスは、変数を左辺値として評価すれば取り出せる
+    gen_lval(node->lhs);
+    return;
+  // * デリファレンス：値をアドレスだと思って、その指す値を取り出す
+  case ND_DEREF:
+    // 値は lhs に入っている
+    gen(node->lhs);
+    // 値を rax に持ってくる
+    printf("pop rax\n");
+    // 値をアドレスだと思って、その指す値を rax に取り出す
+    printf("mov rax, [rax]\n");
+    // rax をスタックに積む
+    printf("push rax\n");
+    return;
   }
 
   // 二項演算なら左辺と右辺がそれぞれ最終的に

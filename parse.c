@@ -155,7 +155,7 @@ Token *tokenize(char *p) {
       continue;
     }
     // 1文字の記号
-    if (strchr("+-*/(){}<>=;,", *p)) {
+    if (strchr("+-*/(){}<>=;,&", *p)) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     }
@@ -270,6 +270,8 @@ void register_var(char *str, int len);
 // add        = mul ("+" mul | "-" mul)*
 // mul        = unary ("*" unary | "/" unary)*
 // unary      = ("+" | "-")? primary
+//            | "*" unary
+//            | "&" unary
 // primary    = num
 //            | ident
 //            | ident ("(" expr? ("," expr)* ")")?
@@ -515,6 +517,8 @@ Node *mul() {
 
 // 単項演算子を含むかもしれない項をパーズする
 // unary   = ("+" | "-")? primary
+//         | "*" unary
+//         | "&" unary
 Node *unary() {
   if (consume("+")) {
     // 単項 + 演算子は実質なにもしない
@@ -523,6 +527,16 @@ Node *unary() {
   if (consume("-")) {
     // 単項 - 演算子は 0 - primary に変換する
     return new_node(ND_SUB, new_node_num(0), primary());
+  }
+  if (consume("&")) {
+    // 単項 & 演算子は、変数へのアドレスを表す
+    Node *node = unary();
+    return new_node(ND_ADDR, node, NULL);
+  }
+  if (consume("*")) {
+    // 単項 * 演算子は、値をアドレスだと思ってその指す値を取り出す
+    Node *node = unary();
+    return new_node(ND_DEREF, node, NULL);
   }
 
   // 単項演算子がなければただの primary

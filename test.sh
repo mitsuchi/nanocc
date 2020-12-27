@@ -16,7 +16,8 @@ assert() {
   fi
 }
 
-
+assert 3 "main(){x = 3; y = 5; z = &y + 8; return *z;}" # y の8バイト上に x がある
+assert 3 "main(){x = 3; y = &x; return *y;}"
 assert 55 "fib(n){if(n < 2) {return 1;} else {return (fib(n-1) + fib(n-2));}} main(){return fib(9);}"
 assert 30 "add(x,y){return x+y;} main(){return add(10,20);}"
 assert 30 "main(){return triple(10);} triple(x){return x*3;}"
