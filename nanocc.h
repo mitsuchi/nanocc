@@ -45,6 +45,7 @@ typedef enum {
   ND_PARAM, // 仮引数
   ND_ADDR, // & 変数のアドレス
   ND_DEREF, // * デリファレンス
+  ND_DECL, // 変数宣言
 } NodeKind;
 
 typedef struct Node Node;
@@ -80,6 +81,7 @@ typedef enum {
   TK_FOR,      // for
   TK_NUM,      // 整数トークン
   TK_EOF,      // 入力の終わりを表すトークン
+  TK_INT,      // int
 } TokenKind;
 
 typedef struct Token Token;

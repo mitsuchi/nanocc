@@ -4,6 +4,7 @@
 // program    = func_def*
 // func_def   = ident ("(" ident? ("," ident)* ")")? "{" stmt* "}"
 // stmt       = expr ";"
+//            | "int" ident ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
@@ -212,6 +213,12 @@ Token *tokenize(char *p) {
       p += 3;
       continue;
     }
+    // int
+    if (strncmp(p, "int", 3) == 0 && !is_alnum(p[3])) {
+      cur = new_token(TK_INT, cur, p, 3);
+      p += 3;
+      continue;
+    }    
     // 1文字のアルファベットを見つけたら
     if ('a' <= *p && *p <= 'z') {
       // 開始位置を覚えておいて
@@ -370,6 +377,7 @@ void register_var(char *str, int len) {
 
 // 文をパーズする
 // stmt       = expr ";"
+//            | "int" ident ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
@@ -377,8 +385,18 @@ void register_var(char *str, int len) {
 //            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 Node *stmt() {
   Node *node;
+  // 変数定義 int ident ";" 
+  if (consume_reserved(TK_INT)) {
+    // 次は識別子のはず
+    Token *tok = expect_ident();
+    // 変数宣言のノードをつくる
+    node = new_node(ND_DECL, NULL, NULL);
+    // ローカル変数に登録する
+    register_var(tok->str, tok->len);
+
+    expect(";");
   // block
-  if (consume("{")) {
+  } else if (consume("{")) {
     // ブロックを表すノードを用意する
     // node->next で複数の文をつないでいく
     node = new_node(ND_BLOCK, NULL, NULL);
@@ -590,26 +608,8 @@ Node *primary() {
       // 見つかればオフセットはそれと同じになる
       node->offset = lvar->offset;
     } else {
-      // 新しい変数名であれば、変数名リストに追加する
-      lvar = calloc(1, sizeof(LVar));
-      // 新しい要素は先頭につなぐ
-      lvar->next = cur_func->locals;
-      // 変数名はトークンが持つ値をそのまま使う
-      lvar->name = tok->str;
-      // 変数名の長さも同じ
-      lvar->len = tok->len;
-      // 変数名のスタックベースからのオフセットは、
-      // 最後に追加された変数のオフセット + 8にする
-      if (cur_func->locals) {
-        lvar->offset = cur_func->locals->offset + 8;
-      } else {
-        // 最初に見つかった変数ならオフセットは 8 にする
-        lvar->offset = 8;
-      }
-      // ASTノードに持つオフセットはそれを使う
-      node->offset = lvar->offset;
-      // 変数リストの先頭アドレスをいま追加したものとする
-      cur_func->locals = lvar;
+      // 見つからなければエラー
+      error_at(tok->str, "定義されていない変数です");
     }
     return node;
   }

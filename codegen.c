@@ -5,6 +5,7 @@ int label_id = 1;
 
 // 左辺値の表すアドレスをスタックに積むコードを出力する
 void gen_lval(Node *node) {
+  printf("  # gen lval\n");
   if (node->kind != ND_LVAR)
     error("代入の左辺値が変数ではありません");
 
@@ -13,7 +14,7 @@ void gen_lval(Node *node) {
   // ベースポインタからその変数へのオフセットを引くことで、変数のアドレスを得る
   printf("  sub rax, %d\n", node->offset);
   // 変数のアドレスをスタックに積む
-  printf("  push rax\n");
+  printf("  push rax # variable's address\n");
 }
 
 // ASTからアセンブリを出力する
@@ -35,6 +36,7 @@ void gen(Node *node) {
     return;
   // 左辺値
   case ND_LVAR:
+    printf("  # lvar\n");
     // 左辺値の指すアドレスをスタックに積むコードを生成
     gen_lval(node);
     // 左辺値の指すアドレスを rax に持ってくる
@@ -46,6 +48,7 @@ void gen(Node *node) {
     return;
   // 代入式
   case ND_ASSIGN:
+    printf("  # assign\n");
     // まず左辺のアドレスをスタックに積む
     gen_lval(node->lhs);
     // 右辺値をスタックに積む
@@ -82,6 +85,7 @@ void gen(Node *node) {
     return;
   // if
   case ND_IF:
+    printf("  # if\n");
     // 条件式 をコンパイルしてスタックトップに積む
     gen(node->cond);
     // 条件式を 0 と比較する
@@ -164,6 +168,7 @@ void gen(Node *node) {
     return;
   // 関数呼び出し
   case ND_CALL:
+    printf("  # call\n");
     // 引数を順にコンパイルする
     for (int i = 0; i < node->argc; i++) {
       gen(node->args[i]);
@@ -237,6 +242,11 @@ void gen(Node *node) {
     printf("mov rax, [rax]\n");
     // rax をスタックに積む
     printf("push rax\n");
+    return;
+  // 変数宣言
+  case ND_DECL:
+    // なにもしないが、何かを積む約束になっているので 0 を積む
+    printf("push 0 # do nothing\n");
     return;
   }
 
