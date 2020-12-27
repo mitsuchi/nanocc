@@ -11,6 +11,17 @@
 // 文字列の処理: strcpy など
 #include <string.h>
 
+// ローカル変数 Local Var を LVar という型で表す
+typedef struct LVar LVar;
+
+// ローカル変数の型
+struct LVar {
+  LVar *next; // 次の変数かNULL
+  char *name; // 変数の名前
+  int len;    // 名前の長さ
+  int offset; // RBPからのオフセット
+};
+
 // 抽象構文木のノードの種類
 typedef enum {
   ND_ADD, // +
@@ -52,6 +63,8 @@ struct Node {
                   // 関数定義のときは、仮引数を入れる。
   int argc;       // 関数呼び出しのときは、実引数の個数。
                   // 関数定義のときは、仮引数の個数
+  LVar *locals;   // 関数定義の際に、ローカル変数のリストの先頭を指す
+                  // 新しい要素は先頭につないでいくので、先頭アドレスは最後に足した要素を指す
 };
 
 // トークンの種類
@@ -96,20 +109,8 @@ Node *code[100];
 // printfと同じ引数を取る
 void error(char *fmt, ...);
 
-// ローカル変数 Local Var を LVar という型で表す
-typedef struct LVar LVar;
-
-// ローカル変数の型
-struct LVar {
-  LVar *next; // 次の変数かNULL
-  char *name; // 変数の名前
-  int len;    // 名前の長さ
-  int offset; // RBPからのオフセット
-};
-
-// ローカル変数リストの先頭アドレスを覚えておく
-// 新しい要素は先頭につないでいくので、先頭アドレスは最後に足した要素を指す
-LVar *locals;
-
 // トップレベルにある関数定義の並びを入れておく
 Node *func_defs[100];
+
+// いまパーズ中の関数定義のノードを入れておく
+Node *cur_func;

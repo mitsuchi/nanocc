@@ -3,7 +3,7 @@
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
 LVar *find_lvar(Token *tok) {
   // 変数名のリストを先頭から順に見ていって
-  for (LVar *var = locals; var; var = var->next)
+  for (LVar *var = cur_func->locals; var; var = var->next)
     // 既存のものと長さが一緒で文字列が一緒ならそれを返す
     if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
       return var;
@@ -298,6 +298,8 @@ Node *func_def() {
   node->kind = ND_FUNC_DEF;
   node->str = tok->str; // 関数名
   node->len = tok->len; // 関数名の長さ
+  // 現在処理中の関数としてグローバルに持っておく
+  cur_func = node;
   int i = 0;
   // (ident ("," ident)*)? ")")
   // 次が ")" でないのなら識別子が続く
@@ -347,21 +349,21 @@ Node *func_def() {
 void register_var(char *str, int len) {
   LVar *lvar = calloc(1, sizeof(LVar));
   // 新しい要素を先頭につなぐ
-  lvar->next = locals;
+  lvar->next = cur_func->locals;
   // 変数名はトークンが持つ値をそのまま使う
   lvar->name = str;
   // 変数名の長さも同じ
   lvar->len = len;
   // 変数名のスタックベースからのオフセットは、
   // 最後に追加された変数のオフセット + 8にする
-  if (locals) {
-    lvar->offset = locals->offset + 8;
+  if (cur_func->locals) {
+    lvar->offset = cur_func->locals->offset + 8;
   } else {
     // 最初に見つかった変数ならオフセットは 8 にする
     lvar->offset = 8;
   }
   // 変数リストの先頭アドレスをいま追加したものとする
-  locals = lvar;
+  cur_func->locals = lvar;
 }
 
 // 文をパーズする
@@ -569,6 +571,7 @@ Node *primary() {
     // ベースポインターからのオフセットを決めるために、
     // これまでのローカル変数リストから変数名を探す
     LVar *lvar = find_lvar(tok);
+    
     if (lvar) {
       // 見つかればオフセットはそれと同じになる
       node->offset = lvar->offset;
@@ -576,15 +579,15 @@ Node *primary() {
       // 新しい変数名であれば、変数名リストに追加する
       lvar = calloc(1, sizeof(LVar));
       // 新しい要素は先頭につなぐ
-      lvar->next = locals;
+      lvar->next = cur_func->locals;
       // 変数名はトークンが持つ値をそのまま使う
       lvar->name = tok->str;
       // 変数名の長さも同じ
       lvar->len = tok->len;
       // 変数名のスタックベースからのオフセットは、
       // 最後に追加された変数のオフセット + 8にする
-      if (locals) {
-        lvar->offset = locals->offset + 8;
+      if (cur_func->locals) {
+        lvar->offset = cur_func->locals->offset + 8;
       } else {
         // 最初に見つかった変数ならオフセットは 8 にする
         lvar->offset = 8;
@@ -592,7 +595,7 @@ Node *primary() {
       // ASTノードに持つオフセットはそれを使う
       node->offset = lvar->offset;
       // 変数リストの先頭アドレスをいま追加したものとする
-      locals = lvar;
+      cur_func->locals = lvar;
     }
     return node;
   }

@@ -183,6 +183,8 @@ void gen(Node *node) {
     printf("  push 0\n"); // ムダに push して16の倍数にそろえる
     printf(".Lend%d:\n", label_id);
     printf("  call %s\n", func_name);
+    // 関数の戻り値が rax に入っているのでスタックに積む
+    printf("  push rax\n");
     label_id++;
     return;
   // 関数定義
@@ -195,6 +197,7 @@ void gen(Node *node) {
     printf("%s:\n", func_name);
     // プロローグ
     // 現時点のスタックベースポインタをスタックに積む
+    printf("  # prologue\n");
     printf("  push rbp\n");
     // 現在のスタックの先頭をベースポインタとする
     printf("  mov rbp, rsp\n");
@@ -203,14 +206,16 @@ void gen(Node *node) {
       printf("  push %s\n", arg_registers[i]);
     }
     // 真のローカル変数分の領域を確保する        
-    if (locals) {
-      printf("  sub rsp, %d\n", locals->offset - node->argc * 8);
+    if (node->locals) {
+      printf("  sub rsp, %d\n", node->locals->offset - node->argc * 8);
     }
 
     // 本体であるブロックをコンパイルする
+    printf("  # function body\n");
     gen(node->body);
     // エピローグ
     // 関数呼び出し時点のベースポインタをスタックから取得し
+    printf("  # epilogue\n");
     printf("  mov rsp, rbp\n");
     // ベースポインタをそれに戻す
     printf("  pop rbp\n");

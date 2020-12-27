@@ -16,6 +16,9 @@ assert() {
   fi
 }
 
+assert 90 "main(){return triple(10,20);} triple(x,y){return x*3+y*3;}"
+assert 30 "main(){return triple(10);} triple(x){return x*3;}"
+assert 40 "main(){return fourty();} fourty(){return 40;}"
 assert 0 "main(){return 0;}"
 assert 42 "main(){return 42;}"
 assert 3 "main(){return 1+2;}"
