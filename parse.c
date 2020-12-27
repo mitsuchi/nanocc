@@ -252,6 +252,7 @@ Node *mul();
 Node *unary();
 Node *primary();
 Node *num();
+void register_var(char *str, int len);
 
 // 全体の EBNF
 // program    = func_def*
@@ -315,6 +316,8 @@ Node *func_def() {
     node->args[i++] = param;
     // "," が来たら読み捨てる
     consume(",");
+    // 仮引数名を変数リストに追加する
+    register_var(tok->str, tok->len);
   }
   node->argc = i;
 
@@ -338,6 +341,27 @@ Node *func_def() {
   // 関数定義の本体をブロックにする
   node->body = block;
   return node;
+}
+
+// 変数名をリストに追加する
+void register_var(char *str, int len) {
+  LVar *lvar = calloc(1, sizeof(LVar));
+  // 新しい要素を先頭につなぐ
+  lvar->next = locals;
+  // 変数名はトークンが持つ値をそのまま使う
+  lvar->name = str;
+  // 変数名の長さも同じ
+  lvar->len = len;
+  // 変数名のスタックベースからのオフセットは、
+  // 最後に追加された変数のオフセット + 8にする
+  if (locals) {
+    lvar->offset = locals->offset + 8;
+  } else {
+    // 最初に見つかった変数ならオフセットは 8 にする
+    lvar->offset = 8;
+  }
+  // 変数リストの先頭アドレスをいま追加したものとする
+  locals = lvar;
 }
 
 // 文をパーズする

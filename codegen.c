@@ -198,10 +198,15 @@ void gen(Node *node) {
     printf("  push rbp\n");
     // 現在のスタックの先頭をベースポインタとする
     printf("  mov rbp, rsp\n");
-    // 変数分の領域を確保する
-    if (locals) {
-      printf("  sub rsp, %d\n", locals->offset);
+    // レジスタにある引数を、引数の個数分だけスタックに積む
+    for (int i = node->argc - 1; i >= 0; i--) {
+      printf("  push %s\n", arg_registers[i]);
     }
+    // 真のローカル変数分の領域を確保する        
+    if (locals) {
+      printf("  sub rsp, %d\n", locals->offset - node->argc * 8);
+    }
+
     // 本体であるブロックをコンパイルする
     gen(node->body);
     // エピローグ
