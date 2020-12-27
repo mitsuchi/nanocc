@@ -175,6 +175,7 @@ void gen(Node *node) {
     printf("  mov rax, %d\n", node->argc);
     // 関数名をコピーしてくる
     strncpy(func_name, node->str, node->len);
+    func_name[node->len] = '\0';
     // rsp が16の倍数になっていなければムダに push する
     printf("  mov rbx, rsp\n"); // rbx に rsp を持ってくる
     printf("  and rbx, 15\n");  // 0xFF とandをとって0なら16の倍数
@@ -182,6 +183,7 @@ void gen(Node *node) {
     printf("  je .Lend%d\n", label_id); // 0じゃなければ16の倍数じゃない
     printf("  push 0\n"); // ムダに push して16の倍数にそろえる
     printf(".Lend%d:\n", label_id);
+    printf("  # len %d\n", node->len);
     printf("  call %s\n", func_name);
     // 関数の戻り値が rax に入っているのでスタックに積む
     printf("  push rax\n");
@@ -191,6 +193,7 @@ void gen(Node *node) {
   case ND_FUNC_DEF:
     // 関数名をコピーしてくる
     strncpy(func_name, node->str, node->len);
+    func_name[node->len] = '\0';
     // 関数をリンク時に外のファイルから見れるようにする
     printf(".globl %s\n", func_name);
     // ラベルを出力する
