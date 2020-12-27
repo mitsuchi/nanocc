@@ -177,12 +177,7 @@ void gen(Node *node) {
     // 関数名をコピーしてくる
     strncpy(func_name, node->str, node->len);
     func_name[node->len] = '\0';
-    // rsp が16の倍数になっていなければ調整、のコードが間違っていたのでいったんコメントアウト
-    // printf("  mov rbx, rsp\n"); // rbx に rsp を持ってくる
-    // printf("  and rbx, 15\n");  // 0xFF とandをとって0なら16の倍数
-    // printf("  cmp rbx, 0\n");   // 0 と比べる
-    // printf("  je .Lend%d\n", label_id); // 0じゃなければ16の倍数じゃない
-    // printf("  push 0\n"); // ムダに push して16の倍数にそろえる
+    // todo: rsp が16の倍数になっていなければ調整、のコードを入れる
     printf(".Lend%d:\n", label_id);
     printf("  # len %d\n", node->len);
     printf("  call %s\n", func_name);
