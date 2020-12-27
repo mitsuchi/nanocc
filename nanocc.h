@@ -11,6 +11,13 @@
 // 文字列の処理: strcpy など
 #include <string.h>
 
+// 値の型
+struct Type {
+  enum { INT, PTR } kind;
+  struct Type *ptr_to;
+};
+typedef struct Type Type;
+
 // ローカル変数 Local Var を LVar という型で表す
 typedef struct LVar LVar;
 
@@ -20,6 +27,7 @@ struct LVar {
   char *name; // 変数の名前
   int len;    // 名前の長さ
   int offset; // RBPからのオフセット
+  Type *type;  // 変数の型
 };
 
 // 抽象構文木のノードの種類

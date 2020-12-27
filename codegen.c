@@ -6,15 +6,20 @@ int label_id = 1;
 // 左辺値の表すアドレスをスタックに積むコードを出力する
 void gen_lval(Node *node) {
   printf("  # gen lval\n");
-  if (node->kind != ND_LVAR)
-    error("代入の左辺値が変数ではありません");
-
-  // rax にベースポインタをもってくる
-  printf("  mov rax, rbp\n");
-  // ベースポインタからその変数へのオフセットを引くことで、変数のアドレスを得る
-  printf("  sub rax, %d\n", node->offset);
-  // 変数のアドレスをスタックに積む
-  printf("  push rax # variable's address\n");
+  if (node->kind == ND_LVAR) {
+    // rax にベースポインタをもってくる
+    printf("  mov rax, rbp\n");
+    // ベースポインタからその変数へのオフセットを引くことで、変数のアドレスを得る
+    printf("  sub rax, %d\n", node->offset);
+    // 変数のアドレスをスタックに積む
+    printf("  push rax # variable's address\n");
+  } else if (node->kind == ND_DEREF) {
+    // * の右側を普通の値だと思ってコンパイルする
+    gen(node->lhs);
+    // スタックの先頭にアドレスが積まれるので、これでOK
+  } else {
+    error("代入の左辺値が変数またはデリファレンスではありません");
+  }
 }
 
 // ASTからアセンブリを出力する

@@ -16,7 +16,9 @@ assert() {
   fi
 }
 
-assert 42 "int main(){int x; x = 42; return x;}";
+
+assert 3 "int main(){ int x; int *y; y = &x; *y = 3; return x;}"
+assert 42 "int main(){int x; x = 42; return x;}"
 assert 3 "int main(){int x; int y; int z; x = 3; y = 5; z = &y + 8; return *z;}" # y の8バイト上に x がある
 assert 3 "int main(){int x; int y; x = 3; y = &x; return *y;}"
 assert 55 "int fib(int n){if(n < 2) {return 1;} else {return (fib(n-1) + fib(n-2));}} int main(){return fib(9);}"

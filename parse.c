@@ -2,9 +2,9 @@
 
 // 全体の EBNF
 // program    = func_def*
-// func_def   = "int" ident ("(" ("int" ident)? ("," "int" ident)* ")")? "{" stmt* "}"
+// func_def   = "int" "*"* ident ("(" ("int" "*"* ident)? ("," "int" "*"* ident)* ")")? "{" stmt* "}"
 // stmt       = expr ";"
-//            | "int" ident ";"
+//            | "int" "*"* ident ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
@@ -23,6 +23,23 @@
 //            | ident
 //            | ident ("(" expr? ("," expr)* ")")?
 //            | "(" expr ")"
+
+// 新しい型の部品を作成してリスト末尾に繋げる
+Type *append_type(int kind, Type *head, Type *tail) {
+  // 新しい型をつくる
+  Type *type = calloc(1, sizeof(Type));
+  type->kind = kind;
+  // リストが空でないなら末尾に繋げる
+  if (tail) {
+    tail->ptr_to = type;
+    tail = type;
+  } else {
+    // リストが空なら head と tail が新しい型を指すようにする
+    head = type;
+    tail = type;
+  }
+  return type;
+}
 
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
 LVar *find_lvar(Token *tok) {
@@ -294,7 +311,7 @@ Node *mul();
 Node *unary();
 Node *primary();
 Node *num();
-void register_var(char *str, int len);
+void register_var(char *str, int len, Type *type);
 
 // プログラムをパーズする
 // program    = func_def*
@@ -306,14 +323,16 @@ void program() {
 }
 
 // 関数定義をパーズする
-// func_def   = "int" ident ("(" ("int" ident)? ("," "int" ident)* ")")? "{" stmt* "}"
+// func_def   = "int" "*"* ident ("(" ("int" "*"* ident)? ("," "int" "*"* ident)* ")")? "{" stmt* "}"
 Node *func_def() {
   // "int" が来るはず
   expect_rword(TK_INT, "int");
-
+  // 次には "*"* が来る
+  while (consume("*")) {
+    ;
+  }
   // 識別子がくるはず
   Token *tok = expect_ident();
-
   // "(" が来るはず
   expect("(");
 
@@ -329,7 +348,16 @@ Node *func_def() {
   // 次が ")" でないのなら識別子が続く
   while (!consume(")")) {
     // 次は "int" のはず
-    expect_rword(TK_INT, "int");    
+    expect_rword(TK_INT, "int");
+    // 次には "*"* が来る
+    Type *head = NULL;
+    Type *tail = NULL;
+    while (consume("*")) {
+      // * が一つ来るごとに、* -> * -> .. -> Int の先頭のリストを伸ばす
+      append_type(PTR, head, tail);
+    }
+    // 型のリストの末尾はつねに INT
+    append_type(INT, head, tail);
     // 次は識別子のはず
     tok = expect_ident();
     // 仮引数の文字列を入れる領域を確保する
@@ -345,7 +373,7 @@ Node *func_def() {
     // "," が来たら読み捨てる
     consume(",");
     // 仮引数名を変数リストに追加する
-    register_var(tok->str, tok->len);
+    register_var(tok->str, tok->len, head);
   }
   node->argc = i;
 
@@ -372,7 +400,7 @@ Node *func_def() {
 }
 
 // 変数名をリストに追加する
-void register_var(char *str, int len) {
+void register_var(char *str, int len, Type *type) {
   LVar *lvar = calloc(1, sizeof(LVar));
   // 新しい要素を先頭につなぐ
   lvar->next = cur_func->locals;
@@ -388,13 +416,15 @@ void register_var(char *str, int len) {
     // 最初に見つかった変数ならオフセットは 8 にする
     lvar->offset = 8;
   }
+  // 変数の型
+  lvar->type = type;
   // 変数リストの先頭アドレスをいま追加したものとする
   cur_func->locals = lvar;
 }
 
 // 文をパーズする
 // stmt       = expr ";"
-//            | "int" ident ";"
+//            | "int" "*"* ident ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
@@ -402,14 +432,23 @@ void register_var(char *str, int len) {
 //            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 Node *stmt() {
   Node *node;
-  // 変数定義 int ident ";" 
+  // 変数定義 int "*"* ident ";" 
   if (consume_reserved(TK_INT)) {
+    // 次には "*"* が来る
+    Type *head = NULL; // 型を表すリストの先頭
+    Type *tail = NULL; // リストの末尾
+    while (consume("*")) {
+      // * が一つ来るごとに、* -> * -> .. -> Int の先頭のリストを伸ばす
+      append_type(PTR, head, tail);
+    }
+    // 型のリストの末尾はつねに INT
+    append_type(INT, head, tail);
     // 次は識別子のはず
     Token *tok = expect_ident();
     // 変数宣言のノードをつくる
     node = new_node(ND_DECL, NULL, NULL);
     // ローカル変数に登録する
-    register_var(tok->str, tok->len);
+    register_var(tok->str, tok->len, head);
 
     expect(";");
   // block
