@@ -1,5 +1,8 @@
 #include "nanocc.h"
 
+// ラベルの末尾につける通し番号
+int label_id = 1;
+
 // 左辺値の表すアドレスをスタックに積むコードを出力する
 void gen_lval(Node *node) {
   if (node->kind != ND_LVAR)
@@ -15,8 +18,6 @@ void gen_lval(Node *node) {
 
 // ASTからアセンブリを出力する
 void gen(Node *node) {
-  // ラベルの末尾につける通し番号
-  int label_id = 1;
   // ブロック中の現在注目する文
   Node *cur_stmt;
   // 関数名
