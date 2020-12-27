@@ -1,5 +1,28 @@
 #include "nanocc.h"
 
+// 全体の EBNF
+// program    = func_def*
+// func_def   = ident ("(" ident? ("," ident)* ")")? "{" stmt* "}"
+// stmt       = expr ";"
+//            | "{" stmt* "}"
+//            | "return" expr ";"
+//            | "if" "(" expr ")" stmt ("else" stmt)?
+//            | "while" "(" expr ")" stmt
+//            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+// expr       = assign
+// assign     = equality ("=" assign)?
+// equality   = relational ("==" relational | "!=" relational)*
+// relational = add ("<" add | "<=" add | ">" add | ">=" add)*
+// add        = mul ("+" mul | "-" mul)*
+// mul        = unary ("*" unary | "/" unary)*
+// unary      = ("+" | "-")? primary
+//            | "*" unary
+//            | "&" unary
+// primary    = num
+//            | ident
+//            | ident ("(" expr? ("," expr)* ")")?
+//            | "(" expr ")"
+
 // 変数を名前で検索する。見つからなかった場合はNULLを返す。
 LVar *find_lvar(Token *tok) {
   // 変数名のリストを先頭から順に見ていって
@@ -253,29 +276,6 @@ Node *unary();
 Node *primary();
 Node *num();
 void register_var(char *str, int len);
-
-// 全体の EBNF
-// program    = func_def*
-// func_def   = ident ("(" ident? ("," ident)* ")")? "{" stmt* "}"
-// stmt       = expr ";"
-//            | "{" stmt* "}"
-//            | "return" expr ";"
-//            | "if" "(" expr ")" stmt ("else" stmt)?
-//            | "while" "(" expr ")" stmt
-//            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
-// expr       = assign
-// assign     = equality ("=" assign)?
-// equality   = relational ("==" relational | "!=" relational)*
-// relational = add ("<" add | "<=" add | ">" add | ">=" add)*
-// add        = mul ("+" mul | "-" mul)*
-// mul        = unary ("*" unary | "/" unary)*
-// unary      = ("+" | "-")? primary
-//            | "*" unary
-//            | "&" unary
-// primary    = num
-//            | ident
-//            | ident ("(" expr? ("," expr)* ")")?
-//            | "(" expr ")"
 
 // プログラムをパーズする
 // program    = func_def*
