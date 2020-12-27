@@ -16,6 +16,8 @@ assert() {
   fi
 }
 
+
+assert 55 "fib(n){if(n < 2) {return 1;} else {return (fib(n-1) + fib(n-2));}} main(){return fib(9);}"
 assert 30 "add(x,y){return x+y;} main(){return add(10,20);}"
 assert 30 "main(){return triple(10);} triple(x){return x*3;}"
 assert 42 "fourtytwo(){return 42;} main(){return fourtytwo();}"
