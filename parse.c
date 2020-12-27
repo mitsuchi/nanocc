@@ -2,7 +2,7 @@
 
 // 全体の EBNF
 // program    = func_def*
-// func_def   = ident ("(" ident? ("," ident)* ")")? "{" stmt* "}"
+// func_def   = "int" ident ("(" ("int" ident)? ("," "int" ident)* ")")? "{" stmt* "}"
 // stmt       = expr ";"
 //            | "int" ident ";"
 //            | "{" stmt* "}"
@@ -84,6 +84,18 @@ bool consume_reserved(int kind) {
     return true;
   }
   return false;
+}
+
+// 次のトークンが指定した予約語の場合、トークンを1つ読み進める。
+// それ以外の場合にはエラーを報告する。
+void expect_rword(int kind, char *rword) {
+  if (token->kind != kind) {
+    char msg[255];
+    strncpy(msg, token->str, token->len);
+    msg[token->len] = '\0';
+    error_at(token->str, "予約語 %s ではありません", rword);
+  }
+  token = token->next;
 }
 
 // 次のトークンが識別子のときには、トークンを1つ読み進めてから
@@ -294,8 +306,11 @@ void program() {
 }
 
 // 関数定義をパーズする
-// func_def   = ident ("(" ident? ("," ident)* ")")? "{" stmt* "}"
+// func_def   = "int" ident ("(" ("int" ident)? ("," "int" ident)* ")")? "{" stmt* "}"
 Node *func_def() {
+  // "int" が来るはず
+  expect_rword(TK_INT, "int");
+
   // 識別子がくるはず
   Token *tok = expect_ident();
 
@@ -313,6 +328,8 @@ Node *func_def() {
   // (ident ("," ident)*)? ")")
   // 次が ")" でないのなら識別子が続く
   while (!consume(")")) {
+    // 次は "int" のはず
+    expect_rword(TK_INT, "int");    
     // 次は識別子のはず
     tok = expect_ident();
     // 仮引数の文字列を入れる領域を確保する
