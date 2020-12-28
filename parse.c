@@ -25,18 +25,18 @@
 //            | "(" expr ")"
 
 // 新しい型の部品を作成してリスト末尾に繋げる
-Type *append_type(int kind, Type *head, Type *tail) {
+Type *append_type(int kind, Type **head, Type **tail) {
   // 新しい型をつくる
   Type *type = calloc(1, sizeof(Type));
   type->kind = kind;
   // リストが空でないなら末尾に繋げる
-  if (tail) {
-    tail->ptr_to = type;
-    tail = type;
+  if (*tail) {
+    (*tail)->ptr_to = type;
+    *tail = type;
   } else {
     // リストが空なら head と tail が新しい型を指すようにする
-    head = type;
-    tail = type;
+    *head = type;
+    *tail = type;
   }
   return type;
 }
@@ -354,10 +354,10 @@ Node *func_def() {
     Type *tail = NULL;
     while (consume("*")) {
       // * が一つ来るごとに、* -> * -> .. -> Int の先頭のリストを伸ばす
-      append_type(PTR, head, tail);
+      append_type(PTR, &head, &tail);
     }
     // 型のリストの末尾はつねに INT
-    append_type(INT, head, tail);
+    append_type(INT, &head, &tail);
     // 次は識別子のはず
     tok = expect_ident();
     // 仮引数の文字列を入れる領域を確保する
@@ -439,10 +439,10 @@ Node *stmt() {
     Type *tail = NULL; // リストの末尾
     while (consume("*")) {
       // * が一つ来るごとに、* -> * -> .. -> Int の先頭のリストを伸ばす
-      append_type(PTR, head, tail);
+      append_type(PTR, &head, &tail);
     }
     // 型のリストの末尾はつねに INT
-    append_type(INT, head, tail);
+    append_type(INT, &head, &tail);
     // 次は識別子のはず
     Token *tok = expect_ident();
     // 変数宣言のノードをつくる
@@ -663,6 +663,7 @@ Node *primary() {
     if (lvar) {
       // 見つかればオフセットはそれと同じになる
       node->offset = lvar->offset;
+      node->type = lvar->type;
     } else {
       // 見つからなければエラー
       error_at(tok->str, "定義されていない変数です");

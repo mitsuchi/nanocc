@@ -68,6 +68,7 @@ struct Node {
   Node *next;    // ブロック のときのみ使う。次の文へのポインタ。
   int val;       // kindがND_NUMの場合のみ使う
   int offset;    // kindがND_LVARの場合のみ使う。RBPからその変数へのオフセット。
+  Type *type;    // kindがND_LVARの場合のみ使う。その変数の型。
   char *str;     // 関数呼び出しと定義のときだけ使う。関数名の文字列の開始位置
   int len;       // 関数呼び出しと定義のときだけ使う。関数名の文字列の長さ
   Node *args[6];  // 関数呼び出しのときは、実引数を入れる、最大6つ分の配列

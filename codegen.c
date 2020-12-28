@@ -264,11 +264,23 @@ void gen(Node *node) {
   // 左辺、右辺の順でコード生成しているので、先頭が右辺で、2番めが左辺になる
   // 64bitレジスタは rax, rdi, rsi, rdx, rcx, rbp, rsp, rbx, r8, r9, ..
   // のような順序で使うらしい
-  printf("  pop rdi\n");
-  printf("  pop rax\n");
+  printf("  pop rdi\n"); // 右辺
+  printf("  pop rax\n"); // 左辺
 
   switch (node->kind) {
   case ND_ADD:
+    if (node->lhs->kind == ND_LVAR) {
+      // 足し算の左辺が変数のときだけ
+      if (node->lhs->type->kind == PTR) {
+        if (node->lhs->type->ptr_to->kind == INT) {
+          // p + 1 で、p が INT へのポインタなら p + 4 と同じ意味にする
+          printf("  imul rdi, 4\n");
+        } else {
+          // p + 1 で、p が INT へのポインタへのポインタなら p + 8 と同じ意味にする
+          printf("  imul rdi, 8\n");
+        }
+      }
+    }
     printf("  add rax, rdi\n");
     break;
   case ND_SUB:
