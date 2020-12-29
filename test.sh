@@ -17,6 +17,9 @@ assert() {
 }
 
 
+assert 42 "int main() {int a[3]; *a = 42; return *a;}"
+assert 43 "int main() {int a[2]; *a = 42; *(a + 1) = 43; return *(a + 1);}"
+assert 3 "int main() {int a[2]; *a = 1; *(a + 1) = 2; return *a + *(a + 1);}"
 assert 4 "int main(){return sizeof 1;}"
 assert 4 "int main(){int x; return sizeof x;}"
 assert 8 "int main(){int *y; return sizeof y;}"
@@ -25,7 +28,6 @@ assert 8 "int main(){int *y; return sizeof (y+3);}"
 assert 4 "int main(){int *y; return sizeof *y;}"
 assert 4 "int main(){return sizeof sizeof 1;}"
 assert 3 "int main(){ int x; int *y; y = &x; *y = 3; return x;}"
-assert 42 "int main(){int x; x = 42; return x;}"
 assert 3 "int main(){int x; int y; int z; x = 3; y = 5; z = &y + 8; return *z;}" # y の8バイト上に x がある
 assert 3 "int main(){int x; int y; x = 3; y = &x; return *y;}"
 assert 30 "int add(int x,int y){return x+y;} int main(){return add(10,20);}"

@@ -7,6 +7,7 @@ int label_id = 1;
 void gen_lval(Node *node) {
   printf("  # gen lval\n");
   if (node->kind == ND_LVAR) {
+    // ローカル変数の場合
     // rax にベースポインタをもってくる
     printf("  mov rax, rbp\n");
     // ベースポインタからその変数へのオフセットを引くことで、変数のアドレスを得る
@@ -39,11 +40,16 @@ void gen(Node *node) {
   case ND_NUM:
     printf("  push %d\n", node->val);
     return;
-  // 左辺値
+  // ローカル変数
   case ND_LVAR:
     printf("  # lvar\n");
     // 左辺値の指すアドレスをスタックに積むコードを生成
     gen_lval(node);
+    if (node->type->kind == ARRAY) {
+      // 配列ならアドレスを積んでおしまい
+      return;
+    }
+    // 配列以外ならアドレの指す値を持ってくる
     // 左辺値の指すアドレスを rax に持ってくる
     printf("  pop rax\n");
     // アドレスの指す値を rax に持ってくる

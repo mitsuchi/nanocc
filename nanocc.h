@@ -13,8 +13,9 @@
 
 // 値の型
 struct Type {
-  enum { INT, PTR } kind;
+  enum { INT, PTR, ARRAY } kind;
   struct Type *ptr_to;
+  size_t array_size; // 配列のときのみ使う。配列の要素数。
 };
 typedef struct Type Type;
 

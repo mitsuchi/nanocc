@@ -4,7 +4,7 @@
 // program    = func_def*
 // func_def   = "int" "*"* ident ("(" ("int" "*"* ident)? ("," "int" "*"* ident)* ")")? "{" stmt* "}"
 // stmt       = expr ";"
-//            | "int" "*"* ident ";"
+//            | "int" "*"* ident ("[" num "]")? ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
@@ -218,7 +218,7 @@ Token *tokenize(char *p) {
       continue;
     }
     // 1文字の記号
-    if (strchr("+-*/(){}<>=;,&", *p)) {
+    if (strchr("+-*/(){}<>=;,&[]", *p)) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     }
@@ -315,19 +315,27 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
     } else if (node->rhs->type->kind == PTR) {
       node->type = node->rhs->type;
     }
+    // ARRAY の加減算では、その要素へのポインター型
+    if (node->lhs->type->kind == ARRAY) {
+      Type *type = new_type(PTR);
+      type->ptr_to = node->lhs->type->ptr_to;
+      node->type = type;
+    }
   }
   if (kind == ND_ASSIGN) {
     // 代入式では右辺の型
     node->type = node->rhs->type;
   }
   if (kind == ND_ADDR) {
-    // &変数 の形では、変数の型へのポインター型
+    // &変数 の形では、  変数の型へのポインター型
     Type *type = new_type(PTR);
     type->ptr_to = node->lhs->type;
     node->type = type;
   }
   if (kind == ND_DEREF) {
-    // *値 の形では、値が指す値の型
+    // *値 の形では、値が配列ならその要素の型
+    // それ以外では値が指す値の型
+    // どちらの場合も ptr_to が指している
     node->type = node->lhs->type->ptr_to;
   }
   return node;
@@ -451,12 +459,20 @@ void register_var(char *str, int len, Type *type) {
   // 変数名の長さも同じ
   lvar->len = len;
   // 変数名のスタックベースからのオフセットは、
-  // 最後に追加された変数のオフセット + 8にする
-  if (cur_func->locals) {
-    lvar->offset = cur_func->locals->offset + 8;
+  // 最後に追加された変数のオフセット + 値のサイズにする
+  // 値のサイズは、INT と PTR なら 8
+  // ARRAY なら要素のサイズ x 要素数
+  int size;
+  if (type->kind == ARRAY) {
+    size = 8 * type->array_size;
   } else {
-    // 最初に見つかった変数ならオフセットは 8 にする
-    lvar->offset = 8;
+    size = 8;
+  }
+  if (cur_func->locals) {
+    lvar->offset = cur_func->locals->offset + size;
+  } else {
+    // 最初に見つかった変数ならオフセットは値のサイズにする
+    lvar->offset = size;
   }
   // 変数の型
   lvar->type = type;
@@ -466,7 +482,7 @@ void register_var(char *str, int len, Type *type) {
 
 // 文をパーズする
 // stmt       = expr ";"
-//            | "int" "*"* ident ";"
+//            | "int" "*"* ident ("[" num "]")? ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
@@ -474,7 +490,7 @@ void register_var(char *str, int len, Type *type) {
 //            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 Node *stmt() {
   Node *node;
-  // 変数定義 int "*"* ident ";" 
+  // 変数定義 "int" "*"* ident ("[" num "]")? ";"
   if (consume_reserved(TK_INT)) {
     // 次には "*"* が来る
     Type *head = NULL; // 型を表すリストの先頭
@@ -487,6 +503,18 @@ Node *stmt() {
     append_type(INT, &head, &tail);
     // 次は識別子のはず
     Token *tok = expect_ident();
+    // 次に "[" が来たら配列の宣言
+    if (consume("[")) {
+      // 次は数字が来るはず
+      Node *num_node = num();
+      expect("]");
+      // もし配列であれば、型は配列型で、
+      // 要素の型 は head が指すものとする
+      Type *type = new_type(ARRAY);
+      type->ptr_to = head;
+      type->array_size = num_node->val;
+      head = type;
+    }
     // 変数宣言のノードをつくる
     node = new_node(ND_DECL, NULL, NULL);
     // ローカル変数に登録する
@@ -657,9 +685,18 @@ Node *unary() {
   }
   if (consume_reserved(TK_SIZEOF)) {
     Node *node = unary();
+    node->type->array_size;
     int size;
     if (node->type->kind == INT) {
       size = 4;
+    } else if (node->type->kind == ARRAY) {
+      int elem_size;
+      if (node->type->ptr_to->kind == INT) {
+        elem_size = 4;
+      } else {
+        elem_size = 8;
+      }
+      size = node->type->array_size * elem_size;
     } else {
       size = 8;
     }
@@ -708,7 +745,7 @@ Node *primary() {
 
     // 変数の指す値を入れる領域を確保する
     Node *node = calloc(1, sizeof(Node));
-    // ASTノードの種類を左辺値とする
+    // ASTノードの種類をローカル変数とする
     node->kind = ND_LVAR;
     // ベースポインターからのオフセットを決めるために、
     // これまでのローカル変数リストから変数名を探す
@@ -717,6 +754,9 @@ Node *primary() {
     if (lvar) {
       // 見つかればオフセットはそれと同じになる
       node->offset = lvar->offset;
+      // 型は変数の型
+      // この時点でTの配列の型をTへのポインタ型としてしまうことはできない
+      // sizeof があるから
       node->type = lvar->type;
     } else {
       // 見つからなければエラー
