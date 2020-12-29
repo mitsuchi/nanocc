@@ -19,10 +19,20 @@
 // unary      = ("+" | "-")? primary
 //            | "*" unary
 //            | "&" unary
+//            | "sizeof" unary
 // primary    = num
 //            | ident
 //            | ident ("(" expr? ("," expr)* ")")?
 //            | "(" expr ")"
+
+// 新しい型の部品を作成する
+Type *new_type(int kind) {
+  // 新しい型をつくる
+  Type *type = calloc(1, sizeof(Type));
+  type->kind = kind;
+  type->ptr_to = NULL;
+  return type;
+}
 
 // 新しい型の部品を作成してリスト末尾に繋げる
 Type *append_type(int kind, Type **head, Type **tail) {
@@ -247,7 +257,13 @@ Token *tokenize(char *p) {
       cur = new_token(TK_INT, cur, p, 3);
       p += 3;
       continue;
-    }    
+    }
+    // sizeof
+    if (strncmp(p, "sizeof", 6) == 0 && !is_alnum(p[6])) {
+      cur = new_token(TK_SIZEOF, cur, p, 6);
+      p += 6;
+      continue;
+    }
     // 1文字のアルファベットを見つけたら
     if ('a' <= *p && *p <= 'z') {
       // 開始位置を覚えておいて
@@ -289,6 +305,31 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
   node->lhs = lhs;
   // 右辺
   node->rhs = rhs;
+  // 型
+  // 二項演算の結果の型は基本は INT
+  node->type = new_type(INT);
+  if (kind == ND_ADD || kind == ND_SUB) {
+    // PTR の加減算では PTR
+    if (node->lhs->type->kind == PTR) {
+      node->type = node->lhs->type;
+    } else if (node->rhs->type->kind == PTR) {
+      node->type = node->rhs->type;
+    }
+  }
+  if (kind == ND_ASSIGN) {
+    // 代入式では右辺の型
+    node->type = node->rhs->type;
+  }
+  if (kind == ND_ADDR) {
+    // &変数 の形では、変数の型へのポインター型
+    Type *type = new_type(PTR);
+    type->ptr_to = node->lhs->type;
+    node->type = type;
+  }
+  if (kind == ND_DEREF) {
+    // *値 の形では、値が指す値の型
+    node->type = node->lhs->type->ptr_to;
+  }
   return node;
 }
 
@@ -297,6 +338,7 @@ Node *new_node_num(int val) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = ND_NUM;
   node->val = val;
+  node->type = new_type(INT);
   return node;
 }
 
@@ -529,11 +571,11 @@ Node *equality() {
   Node *node = relational();
 
   for (;;) {
-    if (consume("=="))
+    if (consume("==")) {
       node = new_node(ND_EQ, node, relational());
-    else if (consume("!="))
+    } else if (consume("!=")) {
       node = new_node(ND_NEQ, node, relational());
-    else
+    } else
       return node;
   }
 }
@@ -593,6 +635,7 @@ Node *mul() {
 // unary   = ("+" | "-")? primary
 //         | "*" unary
 //         | "&" unary
+//         | "sizeof" unary
 Node *unary() {
   if (consume("+")) {
     // 単項 + 演算子は実質なにもしない
@@ -612,7 +655,16 @@ Node *unary() {
     Node *node = unary();
     return new_node(ND_DEREF, node, NULL);
   }
-
+  if (consume_reserved(TK_SIZEOF)) {
+    Node *node = unary();
+    int size;
+    if (node->type->kind == INT) {
+      size = 4;
+    } else {
+      size = 8;
+    }
+    return new_node_num(size);
+  }
   // 単項演算子がなければただの primary
   return primary();
 }
@@ -638,6 +690,8 @@ Node *primary() {
     node->kind = ND_CALL;
     node->str = tok->str;
     node->len = tok->len;
+    // todo: 関数の返り値の型を見る必要があるがひとまず INT としてしまう
+    node->type = new_type(INT);
     int i = 0;
     // (expr ("," expr)*)? ")")
     // 次が ")" でないのなら式が続く
