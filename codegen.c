@@ -49,7 +49,7 @@ void gen(Node *node) {
       // 配列ならアドレスを積んでおしまい
       return;
     }
-    // 配列以外ならアドレの指す値を持ってくる
+    // 配列以外ならアドレスの指す値を持ってくる
     // 左辺値の指すアドレスを rax に持ってくる
     printf("  pop rax\n");
     // アドレスの指す値を rax に持ってくる
@@ -194,12 +194,9 @@ void gen(Node *node) {
     strncpy(func_name, node->str, node->len);
     func_name[node->len] = '\0';
     // todo: rsp が16の倍数になっていなければ調整、のコードを入れる
-    printf(".Lend%d:\n", label_id);
-    printf("  # len %d\n", node->len);
     printf("  call %s\n", func_name);
     // 関数の戻り値が rax に入っているのでスタックに積む
     printf("  push rax\n");
-    label_id++;
     return;
   // 関数定義
   case ND_FUNC_DEF:
@@ -245,14 +242,15 @@ void gen(Node *node) {
     return;
   // * デリファレンス：値をアドレスだと思って、その指す値を取り出す
   case ND_DEREF:
+    printf("  # deref\n");
     // 値は lhs に入っている
     gen(node->lhs);
     // 値を rax に持ってくる
-    printf("pop rax\n");
+    printf("  pop rax\n");
     // 値をアドレスだと思って、その指す値を rax に取り出す
-    printf("mov rax, [rax]\n");
+    printf("  mov rax, [rax]\n");
     // rax をスタックに積む
-    printf("push rax\n");
+    printf("  push rax\n");
     return;
   // 変数宣言
   case ND_DECL:
