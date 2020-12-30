@@ -23,16 +23,28 @@ void gen_lval(Node *node) {
   }
 }
 
+char *arg_registers(int i, size_t size) {
+  // ABI に定められた引数を格納するべきレジスター群
+  char *arg_registers_8[6] = {
+    "rdi", "rsi", "rdx", "rcx", "r8", "r9"
+  };
+  char *arg_registers_4[6] = {
+    "edi", "esi", "edx", "ecx", "e8", "e9"
+  };
+  if (size == 4) {
+    return arg_registers_4[i];
+  }
+  if (size == 8) {
+    return arg_registers_8[i];
+  }
+}
+
 // ASTからアセンブリを出力する
 void gen(Node *node) {
   // ブロック中の現在注目する文
   Node *cur_stmt;
   // 関数名
   char func_name[255];
-  // ABI に定められた引数を格納するべきレジスター群
-  char *arg_registers[6] = {
-    "rdi", "rsi", "rdx", "rcx", "r8", "r9"
-  };
 
   // 値なら push する
   switch (node->kind) {
@@ -186,7 +198,7 @@ void gen(Node *node) {
     }
     // ABIで定められた各レジスタに pop する
     for (int i = node->argc - 1; i >= 0; i--) {
-      printf("  pop %s\n", arg_registers[i]);
+      printf("  pop %s\n", arg_registers(i, 8));
     }
     // rax には引数の個数を入れる
     printf("  mov rax, %d\n", node->argc);
@@ -213,13 +225,33 @@ void gen(Node *node) {
     printf("  push rbp\n");
     // 現在のスタックの先頭をベースポインタとする
     printf("  mov rbp, rsp\n");
-    // レジスタにある引数を、引数の個数分だけスタックに積む
-    for (int i = node->argc - 1; i >= 0; i--) {
-      printf("  push %s\n", arg_registers[i]);
+    // レジスタにある引数を、引数の個数分だけ、定められたオフセットに割り当てる
+    LVar *cur = node->locals;
+    // ローカル変数のリストを、ローカル変数、実引数の順で逆順に持たせる
+    LVar *vars[255];
+    int num_locals = 0;
+    while (cur) {
+      vars[num_locals] = cur;
+      cur = cur->next;
+      num_locals++;
     }
-    // 真のローカル変数分の領域を確保する        
+    char var_name[255];
+    for (int i = num_locals - 1; i >= 0; i--) {
+      strncpy(var_name, vars[i]->name, vars[i]->len);
+      printf("  # offset %s %d\n", var_name, vars[i]->offset);
+    }
+    // 引数の個数分だけ、スタックに値を割り当てる
+    for (int i = 0; i < node->argc; i++) {
+      printf("  mov rbx, rsp\n");
+      printf("  sub rbx, %d\n", vars[num_locals - 1 - i]->offset);
+      int size = value_size(vars[num_locals - 1 - i]->type->kind);
+      printf("  mov [rbx], %s\n", arg_registers(i, size));
+    }
+    // 引数とローカル変数の全体分の領域を確保する        
     if (node->locals) {
-      printf("  sub rsp, %d\n", node->locals->offset - node->argc * 8);
+      // node->locals は最後に登録された変数を指す
+      printf("  mov rsp, rbp\n");
+      printf("  sub rsp, %d\n", node->locals->offset);
     }
 
     // 本体であるブロックをコンパイルする
@@ -255,7 +287,7 @@ void gen(Node *node) {
   // 変数宣言
   case ND_DECL:
     // なにもしないが、何かを積む約束になっているので 0 を積む
-    printf("push 0 # do nothing\n");
+    printf("  push 0 # do nothing\n");
     return;
   }
 
@@ -273,12 +305,12 @@ void gen(Node *node) {
 
   switch (node->kind) {
   case ND_ADD:
-    if (node->lhs->kind == ND_LVAR) {
+    if (node->lhs->kind == ND_LVAR || node->lhs->kind == ND_ADDR ) {
       // 足し算の左辺が変数のときだけ
       if (node->lhs->type->kind == PTR) {
         if (node->lhs->type->ptr_to->kind == INT) {
-          // p + 1 で、p が INT へのポインタなら p + 4 と同じ意味にする
-          printf("  imul rdi, 4\n");
+          // p + 1 で、p が INT へのポインタなら p + 8 と同じ意味にする
+          printf("  imul rdi, 8\n");
         } else {
           // p + 1 で、p が INT へのポインタへのポインタなら p + 8 と同じ意味にする
           printf("  imul rdi, 8\n");

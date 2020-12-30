@@ -460,13 +460,13 @@ void register_var(char *str, int len, Type *type) {
   lvar->len = len;
   // 変数名のスタックベースからのオフセットは、
   // 最後に追加された変数のオフセット + 値のサイズにする
-  // 値のサイズは、INT と PTR なら 8
+  // 値のサイズは、INT なら 4, PTR なら 8
   // ARRAY なら要素のサイズ x 要素数
   int size;
   if (type->kind == ARRAY) {
-    size = 8 * type->array_size;
+    size = value_size(type->ptr_to->kind) * type->array_size;
   } else {
-    size = 8;
+    size = value_size(type->kind);
   }
   if (cur_func->locals) {
     lvar->offset = cur_func->locals->offset + size;

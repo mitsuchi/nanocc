@@ -16,7 +16,15 @@ assert() {
   fi
 }
 
-
+assert 3 "int main(){int x; int y; int z; x = 3; y = 5; z = &y + 1; return *z;}" # y の8バイト上に x がある
+assert 3 "int main(){int x; int y; x = 3; y = &x; return *y;}"
+assert 3 "int main(){ int x; int *y; y = &x; *y = 3; return x;}"
+assert 7 "int main(){int a; int b; a = 3; b = 4; return a + b;}"
+assert 42 "int main(){return 42;}"
+assert 42 "int main(){int x; x = 42; return x;}"
+assert 42 "int id(int x){return x;} int main(){return id(42);}"
+assert 42 "int id(int x){int y; return x;} int main(){return id(42);}"
+assert 84 "int double(int x){return x*2;} int main(){return double(42);}"
 assert 42 "int main() {int a[3]; *a = 42; return *a;}"
 assert 43 "int main() {int a[2]; *a = 42; *(a + 1) = 43; return *(a + 1);}"
 assert 3 "int main() {int a[2]; *a = 1; *(a + 1) = 2; return *a + *(a + 1);}"
@@ -27,9 +35,6 @@ assert 4 "int main(){int x; return sizeof (x+3);}"
 assert 8 "int main(){int *y; return sizeof (y+3);}"
 assert 4 "int main(){int *y; return sizeof *y;}"
 assert 4 "int main(){return sizeof sizeof 1;}"
-assert 3 "int main(){ int x; int *y; y = &x; *y = 3; return x;}"
-assert 3 "int main(){int x; int y; int z; x = 3; y = 5; z = &y + 8; return *z;}" # y の8バイト上に x がある
-assert 3 "int main(){int x; int y; x = 3; y = &x; return *y;}"
 assert 30 "int add(int x,int y){return x+y;} int main(){return add(10,20);}"
 assert 55 "int fib(int n){if(n < 2) {return 1;} else {return (fib(n-1) + fib(n-2));}} int main(){return fib(9);}"
 assert 30 "int main(){return triple(10);} int triple(int x){return x*3;}"

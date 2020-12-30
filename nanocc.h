@@ -129,3 +129,6 @@ Node *func_defs[100];
 
 // いまパーズ中の関数定義のノードを入れておく
 Node *cur_func;
+
+// その型の値を持つのに必要なサイズ
+int value_size (int kind);
