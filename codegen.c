@@ -307,7 +307,7 @@ void gen(Node *node) {
   case ND_ADD:
     if (node->lhs->kind == ND_LVAR || node->lhs->kind == ND_ADDR ) {
       // 足し算の左辺が変数のときだけ
-      if (node->lhs->type->kind == PTR) {
+      if (node->lhs->type->kind == PTR || node->lhs->type->kind == ARRAY) {
         if (node->lhs->type->ptr_to->kind == INT) {
           // p + 1 で、p が INT へのポインタなら p + 8 と同じ意味にする
           printf("  imul rdi, 8\n");

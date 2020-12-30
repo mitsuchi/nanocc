@@ -692,7 +692,7 @@ Node *unary() {
     } else if (node->type->kind == ARRAY) {
       int elem_size;
       if (node->type->ptr_to->kind == INT) {
-        elem_size = 4;
+        elem_size = 8;
       } else {
         elem_size = 8;
       }
