@@ -16,6 +16,8 @@ assert() {
   fi
 }
 
+assert 42 "int main(){int a[1]; a[0] = 42; return a[0];}"
+assert 2 "int main(){int a[2]; a[0] = 1; a[1] = 2; return a[1];}"
 assert 3 "int main(){int a[2]; *a = 1; *(a + 1) = 2; int *p; p = a; return *p + *(p + 1);}"
 assert 3 "int main(){int x; int y; int *z; x = 3; y = 5; z = &y; return *(z+1);}" # y の8バイト上に x がある
 assert 3 "int main(){int x; int y; int *z; x = 3; y = 5; z = &y+1; return *z;}" # y の8バイト上に x がある
