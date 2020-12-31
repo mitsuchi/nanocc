@@ -36,7 +36,6 @@ Node *mul();
 Node *unary();
 Node *primary();
 Node *num();
-void register_var(char *str, int len, Type *type);
 
 // プログラムをパーズする
 // program    = func_def*
