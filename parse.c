@@ -25,72 +25,6 @@
 //            | ident ("(" expr? ("," expr)* ")")?
 //            | "(" expr ")"
 
-// 変数を名前で検索する。見つからなかった場合はNULLを返す。
-LVar *find_lvar(Token *tok) {
-  // 変数名のリストを先頭から順に見ていって
-  for (LVar *var = cur_func->locals; var; var = var->next)
-    // 既存のものと長さが一緒で文字列が一緒ならそれを返す
-    if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
-      return var;
-  // 見つからなければNULLを返す
-  return NULL;
-}
-
-// 二項演算のASTノードを作る
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
-  // Node1つぶんのメモリを確保して0でクリアする
-  Node *node = calloc(1, sizeof(Node));
-  // ノードの種類: 足し算か数字かなど
-  node->kind = kind;
-  // 左辺
-  node->lhs = lhs;
-  // 右辺
-  node->rhs = rhs;
-  // 型
-  // 二項演算の結果の型は基本は INT
-  node->type = new_type(INT);
-  if (kind == ND_ADD || kind == ND_SUB) {
-    // PTR の加減算では PTR
-    if (node->lhs->type->kind == PTR) {
-      node->type = node->lhs->type;
-    } else if (node->rhs->type->kind == PTR) {
-      node->type = node->rhs->type;
-    }
-    // ARRAY の加減算では、その要素へのポインター型
-    if (node->lhs->type->kind == ARRAY) {
-      Type *type = new_type(PTR);
-      type->ptr_to = node->lhs->type->ptr_to;
-      node->type = type;
-    }
-  }
-  if (kind == ND_ASSIGN) {
-    // 代入式では右辺の型
-    node->type = node->rhs->type;
-  }
-  if (kind == ND_ADDR) {
-    // &変数 の形では、  変数の型へのポインター型
-    Type *type = new_type(PTR);
-    type->ptr_to = node->lhs->type;
-    node->type = type;
-  }
-  if (kind == ND_DEREF) {
-    // *値 の形では、値が配列ならその要素の型
-    // それ以外では値が指す値の型
-    // どちらの場合も ptr_to が指している
-    node->type = node->lhs->type->ptr_to;
-  }
-  return node;
-}
-
-// 数字のASTノードを作る
-Node *new_node_num(int val) {
-  Node *node = calloc(1, sizeof(Node));
-  node->kind = ND_NUM;
-  node->val = val;
-  node->type = new_type(INT);
-  return node;
-}
-
 Node *func_def();
 Node *stmt();
 Node *expr();
@@ -188,37 +122,6 @@ Node *func_def() {
   // 関数定義の本体をブロックにする
   node->body = block;
   return node;
-}
-
-// 変数名をリストに追加する
-void register_var(char *str, int len, Type *type) {
-  LVar *lvar = calloc(1, sizeof(LVar));
-  // 新しい要素を先頭につなぐ
-  lvar->next = cur_func->locals;
-  // 変数名はトークンが持つ値をそのまま使う
-  lvar->name = str;
-  // 変数名の長さも同じ
-  lvar->len = len;
-  // 変数名のスタックベースからのオフセットは、
-  // 最後に追加された変数のオフセット + 値のサイズにする
-  // 値のサイズは、INT なら 4, PTR なら 8
-  // ARRAY なら要素のサイズ x 要素数
-  int size;
-  if (type->kind == ARRAY) {
-    size = value_size(type->ptr_to->kind) * type->array_size;
-  } else {
-    size = value_size(type->kind);
-  }
-  if (cur_func->locals) {
-    lvar->offset = cur_func->locals->offset + size;
-  } else {
-    // 最初に見つかった変数ならオフセットは値のサイズにする
-    lvar->offset = size;
-  }
-  // 変数の型
-  lvar->type = type;
-  // 変数リストの先頭アドレスをいま追加したものとする
-  cur_func->locals = lvar;
 }
 
 // 文をパーズする

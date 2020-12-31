@@ -150,3 +150,11 @@ int expect_number();
 // type
 Type *new_type(int kind);
 Type *append_type(int kind, Type **head, Type **tail);
+
+// var
+LVar *find_lvar(Token *tok);
+void register_var(char *str, int len, Type *type);
+
+// node
+Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
+Node *new_node_num(int val);
