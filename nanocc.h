@@ -132,3 +132,17 @@ Node *cur_func;
 
 // その型の値を持つのに必要なサイズ
 int value_size (int kind);
+
+// エラー出力
+void error(char *fmt, ...);
+void error_at(char *loc, char *fmt, ...);
+
+// tokenizer
+bool at_eof();
+bool consume(char *op);
+bool consume_reserved(int kind);
+void expect_rword(int kind, char *rword);
+Token *consume_ident();
+Token *expect_ident();
+void expect(char *op);
+int expect_number();
