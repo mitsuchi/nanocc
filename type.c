@@ -26,14 +26,16 @@ Type *append_type(int kind, Type **head, Type **tail) {
   return type;
 }
 
-int value_size (int kind) {
-  switch (kind) {
+int type_size (Type *type) {
+  switch (type->kind) {
     case INT:
       // return 4;
       // いったん8バイトにする
       return 8;
     case PTR:
       return 8;
+    case ARRAY:
+      return type_size(type->ptr_to) * type->array_size;
     default:
       return 8;
   }

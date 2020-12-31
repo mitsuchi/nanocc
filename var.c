@@ -24,12 +24,7 @@ void register_var(char *str, int len, Type *type) {
   // 最後に追加された変数のオフセット + 値のサイズにする
   // 値のサイズは、INT なら 4, PTR なら 8
   // ARRAY なら要素のサイズ x 要素数
-  int size;
-  if (type->kind == ARRAY) {
-    size = value_size(type->ptr_to->kind) * type->array_size;
-  } else {
-    size = value_size(type->kind);
-  }
+  int size = type_size(type);
   if (cur_func->locals) {
     lvar->offset = cur_func->locals->offset + size;
   } else {

@@ -244,7 +244,7 @@ void gen(Node *node) {
     for (int i = 0; i < node->argc; i++) {
       printf("  mov rbx, rsp\n");
       printf("  sub rbx, %d\n", vars[num_locals - 1 - i]->offset);
-      int size = value_size(vars[num_locals - 1 - i]->type->kind);
+      int size = type_size(vars[num_locals - 1 - i]->type);
       printf("  mov [rbx], %s\n", arg_registers(i, size));
     }
     // 引数とローカル変数の全体分の領域を確保する        

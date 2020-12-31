@@ -131,7 +131,7 @@ Node *func_defs[100];
 Node *cur_func;
 
 // その型の値を持つのに必要なサイズ
-int value_size (int kind);
+int type_size (Type *type);
 
 // エラー出力
 void error(char *fmt, ...);
