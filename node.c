@@ -1,7 +1,7 @@
 #include "nanocc.h"
 
 // 二項演算のASTノードを作る
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+Node *new_node_bin(NodeKind kind, Node *lhs, Node *rhs) {
   // Node1つぶんのメモリを確保して0でクリアする
   Node *node = calloc(1, sizeof(Node));
   // ノードの種類: 足し算か数字かなど

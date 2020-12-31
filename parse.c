@@ -106,7 +106,7 @@ Node *func_def() {
   expect("{");
   // ブロックを表すノードを用意する
   // node->next で複数の文をつないでいく
-  Node *block = new_node(ND_BLOCK, NULL, NULL);
+  Node *block = new_node_bin(ND_BLOCK, NULL, NULL);
   // 文のリストの最後を指しておく
   Node *last = block;
   while (!consume("}")) {
@@ -160,7 +160,7 @@ Node *stmt() {
       head = type;
     }
     // 変数宣言のノードをつくる
-    node = new_node(ND_DECL, NULL, NULL);
+    node = new_node_bin(ND_DECL, NULL, NULL);
     // ローカル変数に登録する
     register_var(tok->str, tok->len, head);
 
@@ -169,7 +169,7 @@ Node *stmt() {
   } else if (consume("{")) {
     // ブロックを表すノードを用意する
     // node->next で複数の文をつないでいく
-    node = new_node(ND_BLOCK, NULL, NULL);
+    node = new_node_bin(ND_BLOCK, NULL, NULL);
     // 文のリストの最後を指しておく
     Node *last = node;
     while (!consume("}")) {
@@ -184,11 +184,11 @@ Node *stmt() {
     last->next = NULL;
   // return
   } else if (consume_reserved(TK_RETURN)) {
-    node = new_node(ND_RETURN, expr(), NULL);
+    node = new_node_bin(ND_RETURN, expr(), NULL);
     expect(";");
   // if
   } else if (consume_reserved(TK_IF)) {
-    node = new_node(ND_IF, NULL, NULL);
+    node = new_node_bin(ND_IF, NULL, NULL);
     expect("(");
     node->cond = expr();
     expect(")");
@@ -198,7 +198,7 @@ Node *stmt() {
     }
   // while
   } else if (consume_reserved(TK_WHILE)) {
-    node = new_node(ND_WHILE, NULL, NULL);
+    node = new_node_bin(ND_WHILE, NULL, NULL);
     expect("(");
     node->cond = expr();
     expect(")");
@@ -206,7 +206,7 @@ Node *stmt() {
   // for 
   // "for" "(" expr? ";" expr? ";" expr? ")" stmt
   } else if (consume_reserved(TK_FOR)) {
-    node = new_node(ND_FOR, NULL, NULL);
+    node = new_node_bin(ND_FOR, NULL, NULL);
     expect("(");
     if (!consume(";")) {
       node->lhs = expr(); // lhs に初期化式を入れる
@@ -244,9 +244,9 @@ Node *equality() {
 
   for (;;) {
     if (consume("==")) {
-      node = new_node(ND_EQ, node, relational());
+      node = new_node_bin(ND_EQ, node, relational());
     } else if (consume("!=")) {
-      node = new_node(ND_NEQ, node, relational());
+      node = new_node_bin(ND_NEQ, node, relational());
     } else
       return node;
   }
@@ -259,15 +259,15 @@ Node *relational() {
 
   for (;;) {
     if (consume("<"))
-      node = new_node(ND_LT, node, add());
+      node = new_node_bin(ND_LT, node, add());
     else if (consume("<="))
-      node = new_node(ND_LTE, node, add());
+      node = new_node_bin(ND_LTE, node, add());
     else if (consume(">"))
       // > は左辺と右辺を逆転した < としてしまう
-      node = new_node(ND_LT, add(), node);
+      node = new_node_bin(ND_LT, add(), node);
     else if (consume(">="))
       // >= は左辺と右辺を逆転した <= としてしまう
-      node = new_node(ND_LTE, add(), node);
+      node = new_node_bin(ND_LTE, add(), node);
     else
       return node;
   }
@@ -280,9 +280,9 @@ Node *add() {
 
   for (;;) {
     if (consume("+"))
-      node = new_node(ND_ADD, node, mul());
+      node = new_node_bin(ND_ADD, node, mul());
     else if (consume("-"))
-      node = new_node(ND_SUB, node, mul());
+      node = new_node_bin(ND_SUB, node, mul());
     else
       return node;
   }
@@ -295,9 +295,9 @@ Node *mul() {
 
   for (;;) {
     if (consume("*"))
-      node = new_node(ND_MUL, node, unary());
+      node = new_node_bin(ND_MUL, node, unary());
     else if (consume("/"))
-      node = new_node(ND_DIV, node, unary());
+      node = new_node_bin(ND_DIV, node, unary());
     else
       return node;
   }
@@ -315,17 +315,17 @@ Node *unary() {
   }
   if (consume("-")) {
     // 単項 - 演算子は 0 - primary に変換する
-    return new_node(ND_SUB, new_node_num(0), primary());
+    return new_node_bin(ND_SUB, new_node_num(0), primary());
   }
   if (consume("&")) {
     // 単項 & 演算子は、変数へのアドレスを表す
     Node *node = unary();
-    return new_node(ND_ADDR, node, NULL);
+    return new_node_bin(ND_ADDR, node, NULL);
   }
   if (consume("*")) {
     // 単項 * 演算子は、値をアドレスだと思ってその指す値を取り出す
     Node *node = unary();
-    return new_node(ND_DEREF, node, NULL);
+    return new_node_bin(ND_DEREF, node, NULL);
   }
   if (consume_reserved(TK_SIZEOF)) {
     Node *node = unary();
@@ -424,6 +424,6 @@ Node *num() {
 Node *assign() {
   Node *node = equality();
   if (consume("="))
-    node = new_node(ND_ASSIGN, node, assign());
+    node = new_node_bin(ND_ASSIGN, node, assign());
   return node;
 }
