@@ -21,8 +21,8 @@
 //            | "&" unary
 //            | "sizeof" unary
 // primary    = num
-//            | ident
 //            | ident ("(" expr? ("," expr)* ")")?
+//            | ident "[" expr "]"
 //            | "(" expr ")"
 
 Node *func_def();
@@ -353,6 +353,7 @@ Node *unary() {
 // primary    = num
 //            | ident ("(" expr? ("," expr)* ")")?
 //            | "(" expr ")"
+//            | ident "[" expr "]"
 Node *primary() {
   // カッコが来てればカッコに挟まれた式
   if (consume("(")) {
@@ -364,8 +365,35 @@ Node *primary() {
   // アルファベットが来てれば識別子または関数呼び出し
   Token *tok = consume_ident();
 
-  // 識別子がきて、つぎが "(" なら関数呼び出し
-  if (tok && consume("(")) {
+  if (tok && consume("[")) {
+    // 変数の指す値を入れる領域を確保する
+    Node *var_node = calloc(1, sizeof(Node));
+    // ASTノードの種類をローカル変数とする
+    var_node->kind = ND_LVAR;
+    // ベースポインターからのオフセットを決めるために、
+    // これまでのローカル変数リストから変数名を探す
+    LVar *lvar = find_lvar(tok);
+    if (lvar) {
+      // 見つかればオフセットはそれと同じになる
+      var_node->offset = lvar->offset;
+      // 型は変数の型
+      // この時点でTの配列の型をTへのポインタ型としてしまうことはできない
+      // sizeof があるから
+      var_node->type = lvar->type;
+    } else {
+      // 見つからなければエラー
+      error_at(tok->str, "定義されていない変数です");
+    }
+
+    // 識別子がきて、つぎが "[" なら配列の特定の要素の値
+    // 配列の添字
+    Node *index = expr();
+    expect("]");
+    Node *array_access_node = new_node_bin(ND_ADD, var_node, index);
+    Node *deref_node = new_node_unary(ND_DEREF, array_access_node);
+    return deref_node;
+  } else if (tok && consume("(")) {
+    // 識別子がきて、つぎが "(" なら関数呼び出し    
     Node *node = calloc(1, sizeof(Node));
     node->kind = ND_CALL;
     node->str = tok->str;
