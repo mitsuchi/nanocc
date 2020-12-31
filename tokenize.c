@@ -110,6 +110,17 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   return tok;
 }
 
+// return だったらそれを返す
+bool new_token_if_keyword(char *str, TokenKind kind, Token **cur, char **p) {
+  int len = strlen(str);
+  if (strncmp(*p, str, len) == 0 && !is_alnum((*p)[len])) {
+    *cur = new_token(kind, *cur, *p, len);
+    *p += len;
+    return true;
+  }
+  return false;
+}
+
 // 入力文字列pをトークナイズしてそれを返す
 Token *tokenize(char *p) {
   Token head;
@@ -135,48 +146,19 @@ Token *tokenize(char *p) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     }
-    // return だったらそれを返す
-    if (strncmp(p, "return", 6) == 0 && !is_alnum(p[6])) {
-      cur = new_token(TK_RETURN, cur, p, 6);
-      p += 6;
-      continue;
-    }
+    if (new_token_if_keyword("return", TK_RETURN, &cur, &p)) continue;
     // if だったらそれを返す
-    if (strncmp(p, "if", 2) == 0 && !is_alnum(p[2])) {
-      cur = new_token(TK_IF, cur, p, 2);
-      p += 2;
-      continue;
-    }
+    if (new_token_if_keyword("if", TK_IF, &cur, &p)) continue;
     // else だったらそれを返す
-    if (strncmp(p, "else", 4) == 0 && !is_alnum(p[4])) {
-      cur = new_token(TK_ELSE, cur, p, 4);
-      p += 4;
-      continue;
-    }
+    if (new_token_if_keyword("else", TK_ELSE, &cur, &p)) continue;
     // while 
-    if (strncmp(p, "while", 5) == 0 && !is_alnum(p[5])) {
-      cur = new_token(TK_WHILE, cur, p, 5);
-      p += 5;
-      continue;
-    }
+    if (new_token_if_keyword("while", TK_WHILE, &cur, &p)) continue;
     // for
-    if (strncmp(p, "for", 3) == 0 && !is_alnum(p[3])) {
-      cur = new_token(TK_FOR, cur, p, 3);
-      p += 3;
-      continue;
-    }
+    if (new_token_if_keyword("for", TK_FOR, &cur, &p)) continue;
     // int
-    if (strncmp(p, "int", 3) == 0 && !is_alnum(p[3])) {
-      cur = new_token(TK_INT, cur, p, 3);
-      p += 3;
-      continue;
-    }
+    if (new_token_if_keyword("int", TK_INT, &cur, &p)) continue;
     // sizeof
-    if (strncmp(p, "sizeof", 6) == 0 && !is_alnum(p[6])) {
-      cur = new_token(TK_SIZEOF, cur, p, 6);
-      p += 6;
-      continue;
-    }
+    if (new_token_if_keyword("sizeof", TK_SIZEOF, &cur, &p)) continue;
     // 1文字のアルファベットを見つけたら
     if ('a' <= *p && *p <= 'z') {
       // 開始位置を覚えておいて
