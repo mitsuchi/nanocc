@@ -36,7 +36,6 @@ int type_size (Type *type) {
       return 8;
     case ARRAY:
       return type_size(type->ptr_to) * type->array_size;
-    default:
-      return 8;
   }
+  error("unreachable: type_size");
 }
