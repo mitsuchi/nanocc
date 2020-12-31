@@ -146,3 +146,7 @@ Token *consume_ident();
 Token *expect_ident();
 void expect(char *op);
 int expect_number();
+
+// type
+Type *new_type(int kind);
+Type *append_type(int kind, Type **head, Type **tail);
