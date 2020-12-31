@@ -156,6 +156,7 @@ LVar *find_lvar(Token *tok);
 void register_var(char *str, int len, Type *type);
 
 // node
+Node *new_node_unary(NodeKind kind, Node *lhs);
 Node *new_node_bin(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 Node *new_node(NodeKind kind);

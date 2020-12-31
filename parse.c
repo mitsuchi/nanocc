@@ -105,7 +105,7 @@ Node *func_def() {
   expect("{");
   // ブロックを表すノードを用意する
   // node->next で複数の文をつないでいく
-  Node *block = new_node_bin(ND_BLOCK, NULL, NULL);
+  Node *block = new_node(ND_BLOCK);
   // 文のリストの最後を指しておく
   Node *last = block;
   while (!consume("}")) {
@@ -159,7 +159,7 @@ Node *stmt() {
       head = type;
     }
     // 変数宣言のノードをつくる
-    node = new_node_bin(ND_DECL, NULL, NULL);
+    node = new_node(ND_DECL);
     // ローカル変数に登録する
     register_var(tok->str, tok->len, head);
 
@@ -168,7 +168,7 @@ Node *stmt() {
   } else if (consume("{")) {
     // ブロックを表すノードを用意する
     // node->next で複数の文をつないでいく
-    node = new_node_bin(ND_BLOCK, NULL, NULL);
+    node = new_node(ND_BLOCK);
     // 文のリストの最後を指しておく
     Node *last = node;
     while (!consume("}")) {
@@ -183,11 +183,11 @@ Node *stmt() {
     last->next = NULL;
   // return
   } else if (consume_reserved(TK_RETURN)) {
-    node = new_node_bin(ND_RETURN, expr(), NULL);
+    node = new_node_unary(ND_RETURN, expr());
     expect(";");
   // if
   } else if (consume_reserved(TK_IF)) {
-    node = new_node_bin(ND_IF, NULL, NULL);
+    node = new_node(ND_IF);
     expect("(");
     node->cond = expr();
     expect(")");
@@ -197,7 +197,7 @@ Node *stmt() {
     }
   // while
   } else if (consume_reserved(TK_WHILE)) {
-    node = new_node_bin(ND_WHILE, NULL, NULL);
+    node = new_node(ND_WHILE);
     expect("(");
     node->cond = expr();
     expect(")");
@@ -205,7 +205,7 @@ Node *stmt() {
   // for 
   // "for" "(" expr? ";" expr? ";" expr? ")" stmt
   } else if (consume_reserved(TK_FOR)) {
-    node = new_node_bin(ND_FOR, NULL, NULL);
+    node = new_node(ND_FOR);
     expect("(");
     if (!consume(";")) {
       node->lhs = expr(); // lhs に初期化式を入れる
@@ -319,12 +319,12 @@ Node *unary() {
   if (consume("&")) {
     // 単項 & 演算子は、変数へのアドレスを表す
     Node *node = unary();
-    return new_node_bin(ND_ADDR, node, NULL);
+    return new_node_unary(ND_ADDR, node);
   }
   if (consume("*")) {
     // 単項 * 演算子は、値をアドレスだと思ってその指す値を取り出す
     Node *node = unary();
-    return new_node_bin(ND_DEREF, node, NULL);
+    return new_node_unary(ND_DEREF, node);
   }
   if (consume_reserved(TK_SIZEOF)) {
     Node *node = unary();
