@@ -29,9 +29,7 @@ Type *append_type(int kind, Type **head, Type **tail) {
 int type_size (Type *type) {
   switch (type->kind) {
     case INT:
-      // return 4;
-      // いったん8バイトにする
-      return 8;
+      return 4;
     case PTR:
       return 8;
     case ARRAY:

@@ -328,21 +328,7 @@ Node *unary() {
   }
   if (consume_reserved(TK_SIZEOF)) {
     Node *node = unary();
-    node->type->array_size;
-    int size;
-    if (node->type->kind == INT) {
-      size = 4;
-    } else if (node->type->kind == ARRAY) {
-      int elem_size;
-      if (node->type->ptr_to->kind == INT) {
-        elem_size = 8;
-      } else {
-        elem_size = 8;
-      }
-      size = node->type->array_size * elem_size;
-    } else {
-      size = 8;
-    }
+    int size = type_size(node->type);
     return new_node_num(size);
   }
   // 単項演算子がなければただの primary

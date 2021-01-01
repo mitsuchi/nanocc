@@ -65,7 +65,11 @@ void gen(Node *node) {
     // 左辺値の指すアドレスを rax に持ってくる
     printf("  pop rax\n");
     // アドレスの指す値を rax に持ってくる
-    printf("  mov rax, [rax]\n");
+    if (type_size(node->type) == 4) {
+      printf("  mov eax, DWORD PTR [rax]\n");
+    } else {
+      printf("  mov rax, [rax]\n");
+    }
     // 持ってきた値をスタックに積む
     printf("  push rax\n");
     return;
@@ -82,7 +86,11 @@ void gen(Node *node) {
     // 左辺値のアドレスを rax に持ってくる
     printf("  pop rax\n");
     // 左辺値のアドレスに右辺値の値をストアする
-    printf("  mov [rax], rdi\n");
+    if (type_size(node->rhs->type) == 4) {
+      printf("  mov DWORD PTR [rax], edi\n");
+    } else {
+      printf("  mov [rax], rdi\n");
+    }
     // 右辺値をスタックに積む。つまり代入式の値は右辺値。
     printf("  push rdi\n");
     return; 
@@ -280,7 +288,11 @@ void gen(Node *node) {
     // 値を rax に持ってくる
     printf("  pop rax\n");
     // 値をアドレスだと思って、その指す値を rax に取り出す
-    printf("  mov rax, [rax]\n");
+    if (type_size(node->lhs->type) == 4) {
+      printf("  mov eax, DWORD PTR [rax]\n");
+    } else {
+      printf("  mov rax, [rax]\n");
+    }
     // rax をスタックに積む
     printf("  push rax\n");
     return;
@@ -308,19 +320,19 @@ void gen(Node *node) {
     if (node->lhs->kind == ND_LVAR || node->lhs->kind == ND_ADDR ) {
       // 足し算の左辺が変数のときだけ
       if (node->lhs->type->kind == PTR || node->lhs->type->kind == ARRAY) {
-        if (node->lhs->type->ptr_to->kind == INT) {
-          // p + 1 で、p が INT へのポインタなら p + 8 と同じ意味にする
-          printf("  imul rdi, 8\n");
-        } else {
-          // p + 1 で、p が INT へのポインタへのポインタなら p + 8 と同じ意味にする
-          printf("  imul rdi, 8\n");
-        }
+        printf("  imul rdi, %d\n", type_size(node->lhs->type->ptr_to));
       }
     }
     printf("  add rax, rdi\n");
     break;
   case ND_SUB:
     // 左辺 - 右辺
+    if (node->lhs->kind == ND_LVAR || node->lhs->kind == ND_ADDR ) {
+      // 足し算の左辺が変数のときだけ
+      if (node->lhs->type->kind == PTR || node->lhs->type->kind == ARRAY) {
+        printf("  imul rdi, %d\n", type_size(node->lhs->type->ptr_to));
+      }
+    }    
     printf("  sub rax, rdi\n");
     break;
   case ND_MUL:
