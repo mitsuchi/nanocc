@@ -30,6 +30,9 @@ int main(int argc, char **argv) {
   // intel記法を使う
   printf(".intel_syntax noprefix\n");
 
+  // グローバル変数を出力する
+  gen_global_var();
+  
   // 先頭の関数定義から順にコード生成
   for (int i = 0; func_defs[i]; i++) {
      gen(func_defs[i]);

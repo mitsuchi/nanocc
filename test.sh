@@ -16,6 +16,9 @@ assert() {
   fi
 }
 
+assert 42 "int x; int y; int main() {x = 42; return x;}"
+assert 30 "int x; int y; int main() {x = 10; y = 20; return x+y;}"
+assert 42 "int a; int **b[10]; int main() {return 42;}"
 assert 4 "int main(){return sizeof 1;}"
 assert 4 "int main(){int x; return sizeof x;}"
 assert 8 "int main(){int *y; return sizeof y;}"

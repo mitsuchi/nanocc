@@ -25,8 +25,8 @@ typedef struct LVar LVar;
 // ローカル変数の型
 struct LVar {
   LVar *next; // 次の変数かNULL
-  char *name; // 変数の名前
-  int len;    // 名前の長さ
+  char name[255]; // 変数の名前
+  int len; // 名前の長さ
   int offset; // RBPからのオフセット
   Type *type;  // 変数の型
 };
@@ -44,6 +44,7 @@ typedef enum {
   ND_NUM, // 整数
   ND_ASSIGN, // =
   ND_LVAR,   // ローカル変数
+  ND_GVAR,   // グローバル変数
   ND_RETURN, // return
   ND_IF, // if
   ND_WHILE, // while
@@ -78,6 +79,7 @@ struct Node {
                   // 関数定義のときは、仮引数の個数
   LVar *locals;   // 関数定義の際に、ローカル変数のリストの先頭を指す
                   // 新しい要素は先頭につないでいくので、先頭アドレスは最後に足した要素を指す
+  LVar *var;      // グローバル変数 ND_GVAR の場合に、変数を指す
 };
 
 // トークンの種類
@@ -116,6 +118,7 @@ extern Token *token;
 
 void program();
 void gen(Node *node);
+void gen_global_var();
 
 // プログラムを構成する文の並びを入れておく
 Node *code[100];
@@ -129,6 +132,10 @@ Node *func_defs[100];
 
 // いまパーズ中の関数定義のノードを入れておく
 Node *cur_func;
+
+// グローバル変数のリストの先頭。
+// リストを伸ばすときは先頭が交代していくようにする
+LVar *global_var_list;
 
 // その型の値を持つのに必要なサイズ
 int type_size (Type *type);
@@ -153,7 +160,9 @@ Type *append_type(int kind, Type **head, Type **tail);
 
 // var
 LVar *find_lvar(Token *tok);
+LVar *find_global_var(Token *tok);
 void register_var(char *str, int len, Type *type);
+void register_global_var(char *str, int len, Type *type);
 
 // node
 Node *new_node_unary(NodeKind kind, Node *lhs);

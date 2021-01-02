@@ -14,6 +14,10 @@ void gen_lval(Node *node) {
     printf("  sub rax, %d\n", node->offset);
     // 変数のアドレスをスタックに積む
     printf("  push rax # variable's address\n");
+  } else if (node->kind == ND_GVAR) {
+    // グローバル変数の場合、変数のアドレスを得る
+    printf("  lea rax, DWORD PTR %s[rip]\n", node->var->name);
+    printf("  push rax # variable's address\n");
   } else if (node->kind == ND_DEREF) {
     // * の右側を普通の値だと思ってコンパイルする
     gen(node->lhs);
@@ -52,6 +56,24 @@ void gen(Node *node) {
   case ND_NUM:
     printf("  push %d\n", node->val);
     return;
+  // グローバル変数
+  case ND_GVAR:
+    printf("  # global var\n");
+    // 左辺値の指すアドレスをスタックに積むコードを生成
+    gen_lval(node);
+    if (node->type->kind == ARRAY) {
+      // 配列ならアドレスを積んでおしまい
+      return;
+    }
+    // 配列以外ならアドレスの指す値を持ってくる
+    // 左辺値の指すアドレスを rax に持ってくる
+    printf("  pop rax\n");
+    // アドレスの指す値を rax に持ってくる
+    if (type_size(node->type) == 4) {
+      printf("  mov eax, DWORD PTR [rax]\n");
+    } else {
+      printf("  mov rax, [rax]\n");
+    }
   // ローカル変数
   case ND_LVAR:
     printf("  # lvar\n");
@@ -243,10 +265,8 @@ void gen(Node *node) {
       cur = cur->next;
       num_locals++;
     }
-    char var_name[255];
     for (int i = num_locals - 1; i >= 0; i--) {
-      strncpy(var_name, vars[i]->name, vars[i]->len);
-      printf("  # offset %s %d\n", var_name, vars[i]->offset);
+      printf("  # offset %s %d\n", vars[i]->name, vars[i]->offset);
     }
     // 引数の個数分だけ、スタックに値を割り当てる
     for (int i = 0; i < node->argc; i++) {
@@ -384,3 +404,16 @@ void gen(Node *node) {
   printf("  push rax\n");
 }
 
+// グローバル変数があれば、領域を確保するコードを出力する
+void gen_global_var() {
+  if (global_var_list) {
+    printf("  .bss\n");
+    LVar *cur = global_var_list;
+    while (cur) {
+      printf("%s:\n", cur->name);
+      printf("  .zero %d\n", cur->offset);
+      cur = cur->next;
+    }
+    printf("	.text\n");
+  }
+}

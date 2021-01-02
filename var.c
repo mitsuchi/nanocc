@@ -11,13 +11,25 @@ LVar *find_lvar(Token *tok) {
   return NULL;
 }
 
+// グローバル変数を名前で検索する。見つからなかった場合はNULLを返す。
+LVar *find_global_var(Token *tok) {
+  // 変数名のリストを先頭から順に見ていって
+  for (LVar *var = global_var_list; var; var = var->next)
+    // 既存のものと長さが一緒で文字列が一緒ならそれを返す
+    if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
+      return var;
+  // 見つからなければNULLを返す
+  return NULL;
+}
+
 // 変数名をリストに追加する
 void register_var(char *str, int len, Type *type) {
   LVar *lvar = calloc(1, sizeof(LVar));
   // 新しい要素を先頭につなぐ
   lvar->next = cur_func->locals;
   // 変数名はトークンが持つ値をそのまま使う
-  lvar->name = str;
+  strncpy(lvar->name, str, len);
+  lvar->name[len] = '\0';
   // 変数名の長さも同じ
   lvar->len = len;
   // 変数名のスタックベースからのオフセットは、
@@ -35,4 +47,31 @@ void register_var(char *str, int len, Type *type) {
   lvar->type = type;
   // 変数リストの先頭アドレスをいま追加したものとする
   cur_func->locals = lvar;
+}
+
+// 変数名をグローバル変数のリストに追加する
+void register_global_var(char *str, int len, Type *type) {
+  LVar *lvar = calloc(1, sizeof(LVar));
+  // 新しい要素を先頭につなぐ
+  lvar->next = global_var_list;
+  // 変数名はトークンが持つ値をそのまま使う
+  strncpy(lvar->name, str, len);
+  lvar->name[len] = '\0';
+  // 変数名の長さも同じ
+  lvar->len = len;
+  // 変数名のオフセットは、
+  // 最後に追加された変数のオフセット + 値のサイズにする
+  // 値のサイズは、INT なら 4, PTR なら 8
+  // ARRAY なら要素のサイズ x 要素数
+  int size = type_size(type);
+  if (global_var_list) {
+    lvar->offset = global_var_list->offset + size;
+  } else {
+    // 最初に見つかった変数ならオフセットは値のサイズにする
+    lvar->offset = size;
+  }
+  // 変数の型
+  lvar->type = type;
+  // 変数リストの先頭アドレスをいま追加したものとする
+  global_var_list = lvar;
 }

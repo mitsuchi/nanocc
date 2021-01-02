@@ -1,8 +1,10 @@
 #include "nanocc.h"
 
 // 全体の EBNF
-// program    = func_def*
-// func_def   = "int" "*"* ident ("(" ("int" "*"* ident)? ("," "int" "*"* ident)* ")")? "{" stmt* "}"
+// program    = global_var_or_funcs*
+// global_var_or_funcs 
+//            = ( "int" "*"* ident ("(" ("int" "*"* ident)? ("," "int" "*"* ident)* ")")? "{" stmt* "}"
+//            | "int" "*"* ident ("[" num "]")? ";" )*
 // stmt       = expr ";"
 //            | "int" "*"* ident ("[" num "]")? ";"
 //            | "{" stmt* "}"
@@ -25,6 +27,7 @@
 //            | ident "[" expr "]"
 //            | "(" expr ")"
 
+Node *global_var_or_funcs();
 Node *func_def();
 Node *stmt();
 Node *expr();
@@ -40,87 +43,119 @@ Node *num();
 // プログラムをパーズする
 // program    = func_def*
 void program() {
-  int i = 0;
-  while (!at_eof())
-    func_defs[i++] = func_def();
-  func_defs[i] = NULL;
+  int func_i = 0;
+  int var_i = 0;
+  while (!at_eof()) {
+    Node *node = global_var_or_funcs();
+    if (node->kind == ND_FUNC_DEF) {
+      func_defs[func_i++] = node;
+    }
+  }
+  func_defs[func_i] = NULL;
 }
 
 // 関数定義をパーズする
-// func_def   = "int" "*"* ident ("(" ("int" "*"* ident)? ("," "int" "*"* ident)* ")")? "{" stmt* "}"
-Node *func_def() {
+// global_var_or_funcs 
+//            = ( "int" "*"* ident ("(" ("int" "*"* ident)? ("," "int" "*"* ident)* ")")? "{" stmt* "}"
+//            | "int" "*"* ident ("[" num "]")? ";" )*
+Node *global_var_or_funcs() {
   // "int" が来るはず
   expect_rword(TK_INT, "int");
   // 次には "*"* が来る
+  Type *head = NULL;
+  Type *tail = NULL;
   while (consume("*")) {
-    ;
+    // * が一つ来るごとに、* -> * -> .. -> Int の先頭のリストを伸ばす
+    append_type(PTR, &head, &tail);
   }
+  // 型のリストの末尾はつねに INT
+  append_type(INT, &head, &tail);
   // 識別子がくるはず
   Token *tok = expect_ident();
-  // "(" が来るはず
-  expect("(");
-
-  // 関数定義のノードを作る
-  Node *node = calloc(1, sizeof(Node));
-  node->kind = ND_FUNC_DEF;
-  node->str = tok->str; // 関数名
-  node->len = tok->len; // 関数名の長さ
-  // 現在処理中の関数としてグローバルに持っておく
-  cur_func = node;
-  int i = 0;
-  // (ident ("," ident)*)? ")")
-  // 次が ")" でないのなら識別子が続く
-  while (!consume(")")) {
-    // 次は "int" のはず
-    expect_rword(TK_INT, "int");
-    // 次には "*"* が来る
-    Type *head = NULL;
-    Type *tail = NULL;
-    while (consume("*")) {
-      // * が一つ来るごとに、* -> * -> .. -> Int の先頭のリストを伸ばす
-      append_type(PTR, &head, &tail);
+  // "(" が来れば関数定義
+  if (consume("(")) {
+    // 関数定義のノードを作る
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_FUNC_DEF;
+    node->str = tok->str; // 関数名
+    node->len = tok->len; // 関数名の長さ
+    // 現在処理中の関数としてグローバルに持っておく
+    cur_func = node;
+    int i = 0;
+    // (ident ("," ident)*)? ")")
+    // 次が ")" でないのなら識別子が続く
+    while (!consume(")")) {
+      // 次は "int" のはず
+      expect_rword(TK_INT, "int");
+      // 次には "*"* が来る
+      Type *head = NULL;
+      Type *tail = NULL;
+      while (consume("*")) {
+        // * が一つ来るごとに、* -> * -> .. -> Int の先頭のリストを伸ばす
+        append_type(PTR, &head, &tail);
+      }
+      // 型のリストの末尾はつねに INT
+      append_type(INT, &head, &tail);
+      // 次は識別子のはず
+      tok = expect_ident();
+      // 仮引数の文字列を入れる領域を確保する
+      Node *param = calloc(1, sizeof(Node));
+      // ASTノードの種類を仮引数とする
+      param->kind = ND_PARAM;
+      // 仮引数名はトークンが持つ値をそのまま使う
+      param->str = tok->str;
+      // 仮引数名の長さも同じ
+      param->len = tok->len;
+      // 仮引数を関数定義に追加する
+      node->args[i++] = param;
+      // 関数の返り値の型を入れておく
+      node->type = head;
+      // "," が来たら読み捨てる
+      consume(",");
+      // 仮引数名を変数リストに追加する
+      register_var(tok->str, tok->len, head);
     }
-    // 型のリストの末尾はつねに INT
-    append_type(INT, &head, &tail);
-    // 次は識別子のはず
-    tok = expect_ident();
-    // 仮引数の文字列を入れる領域を確保する
-    Node *param = calloc(1, sizeof(Node));
-    // ASTノードの種類を仮引数とする
-    param->kind = ND_PARAM;
-    // 仮引数名はトークンが持つ値をそのまま使う
-    param->str = tok->str;
-    // 仮引数名の長さも同じ
-    param->len = tok->len;
-    // 仮引数を関数定義に追加する
-    node->args[i++] = param;
-    // "," が来たら読み捨てる
-    consume(",");
-    // 仮引数名を変数リストに追加する
-    register_var(tok->str, tok->len, head);
-  }
-  node->argc = i;
+    node->argc = i;
 
-  // ブロックが来るはず
-  expect("{");
-  // ブロックを表すノードを用意する
-  // node->next で複数の文をつないでいく
-  Node *block = new_node(ND_BLOCK);
-  // 文のリストの最後を指しておく
-  Node *last = block;
-  while (!consume("}")) {
-    // 文を1つパーズしてノードをつくる
-    Node *cur_node = stmt();
-    // それを文のリストにつなげる
-    last->next = cur_node;
-    // 最後を交代する
-    last = cur_node;
+    // ブロックが来るはず
+    expect("{");
+    // ブロックを表すノードを用意する
+    // node->next で複数の文をつないでいく
+    Node *block = new_node(ND_BLOCK);
+    // 文のリストの最後を指しておく
+    Node *last = block;
+    while (!consume("}")) {
+      // 文を1つパーズしてノードをつくる
+      Node *cur_node = stmt();
+      // それを文のリストにつなげる
+      last->next = cur_node;
+      // 最後を交代する
+      last = cur_node;
+    }
+    // 終末の次はNULLにしておく
+    last->next = NULL;
+    // 関数定義の本体をブロックにする
+    node->body = block;
+    return node;
+  } else {
+    // "[" が来れば配列の宣言
+    if (consume("[")) {
+      // 次は数字が来るはず
+      Node *num_node = num();
+      expect("]");
+      // もし配列であれば、型は配列型で、
+      // 要素の型 は head が指すものとする
+      Type *type = new_type(ARRAY);
+      type->ptr_to = head;
+      type->array_size = num_node->val;
+      head = type;
+    }
+    // 変数宣言のノードをつくる
+    Node *node = new_node(ND_DECL);
+    // グローバル変数に登録する
+    register_global_var(tok->str, tok->len, head);
+    expect(";");
   }
-  // 終末の次はNULLにしておく
-  last->next = NULL;
-  // 関数定義の本体をブロックにする
-  node->body = block;
-  return node;
 }
 
 // 文をパーズする
@@ -367,8 +402,21 @@ Node *primary() {
       // sizeof があるから
       var_node->type = lvar->type;
     } else {
-      // 見つからなければエラー
-      error_at(tok->str, "定義されていない変数です");
+      // ローカル変数に見つからなければ
+      // グローバル変数を探す
+      lvar = find_global_var(tok);
+      if (lvar) {
+        // 見つかればグローバル変数ということになる
+        var_node->kind = ND_GVAR;
+        var_node->var = lvar;
+        // オフセットはそれと同じになる
+        var_node->offset = lvar->offset;
+        // 型は変数の型
+        var_node->type = lvar->type;
+      } else {
+        // 見つからなければエラー
+        error_at(tok->str, "定義されていない変数です");
+      }
     }
 
     // 識別子がきて、つぎが "[" なら配列の特定の要素の値
@@ -416,8 +464,21 @@ Node *primary() {
       // sizeof があるから
       node->type = lvar->type;
     } else {
-      // 見つからなければエラー
-      error_at(tok->str, "定義されていない変数です");
+      // ローカル変数に見つからなければ
+      // グローバル変数を探す
+      lvar = find_global_var(tok);
+      if (lvar) {
+        // 見つかればグローバル変数ということになる
+        node->kind = ND_GVAR;
+        node->var = lvar;
+        // オフセットはそれと同じになる
+        node->offset = lvar->offset;
+        // 型は変数の型
+        node->type = lvar->type;
+      } else {
+        // 見つからなければエラー
+        error_at(tok->str, "定義されていない変数です");
+      }
     }
     return node;
   }
