@@ -113,6 +113,9 @@ Token *tokenize(char *p);
 // 入力プログラム の宣言
 extern char *user_input;
 
+// プログラムの特定の位置の行全体を取り出す
+char *source_code(char *pos);
+
 // 現在着目しているトークン の宣言
 extern Token *token;
 

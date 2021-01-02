@@ -219,6 +219,7 @@ Node *stmt() {
   // return
   } else if (consume_reserved(TK_RETURN)) {
     node = new_node_unary(ND_RETURN, expr());
+    node->str = token->str;
     expect(";");
   // if
   } else if (consume_reserved(TK_IF)) {
@@ -260,8 +261,9 @@ Node *stmt() {
     node->body = stmt();
   } else {
     node = expr();
+    node->str = token->str;
     expect(";");
-  }
+  } 
   return node;
 }
 

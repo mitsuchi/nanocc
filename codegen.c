@@ -56,7 +56,6 @@ void gen(Node *node) {
     return;
   // グローバル変数
   case ND_GVAR:
-    printf("  # global var\n");
     // 左辺値の指すアドレスをスタックに積むコードを生成
     gen_lval(node);
     if (node->type->kind == ARRAY) {
@@ -94,7 +93,7 @@ void gen(Node *node) {
     return;
   // 代入式
   case ND_ASSIGN:
-    printf("  # assign\n");
+    printf("  # %s\n", source_code(node->str));
     // まず左辺のアドレスをスタックに積む
     gen_lval(node->lhs);
     // 右辺値をスタックに積む
@@ -115,6 +114,7 @@ void gen(Node *node) {
     return; 
   // return
   case ND_RETURN:
+    printf("  # %s\n", source_code(node->str));
     // return 式 の 式を積む
     gen(node->lhs);
     // 返すべき値を rax に取ってきて
@@ -218,7 +218,7 @@ void gen(Node *node) {
     return;
   // 関数呼び出し
   case ND_CALL:
-    printf("  # call\n");
+    printf("  # %s\n", source_code(node->str));
     // 引数を順にコンパイルする
     for (int i = 0; i < node->argc; i++) {
       gen(node->args[i]);
@@ -299,7 +299,6 @@ void gen(Node *node) {
     return;
   // * デリファレンス：値をアドレスだと思って、その指す値を取り出す
   case ND_DEREF:
-    printf("  # deref\n");
     // 値は lhs に入っている
     gen(node->lhs);
     // 値を rax に持ってくる
@@ -413,4 +412,35 @@ void gen_global_var() {
     }
     printf("	.text\n");
   }
+}
+
+// プログラムの特定の位置の行の全体を取り出す
+char *source_code(char *pos) {
+  if (pos == NULL) {
+    return "";
+  }
+  // 前方の ";" を探す
+  char *c = pos - 1;
+  int len = 0;
+  while (user_input <= c) {
+    if (*c == ';' || *c == '{') {
+      break;
+    }
+    c--;
+    len++;
+  }
+  c++;  
+  // 後方の ";" を探す
+  char *d = pos;
+  while (*d != '\0') {
+    if (*d == ';')
+      break;
+    d++;
+    len++;
+  }
+  // c から len文字ぶんがその行
+  char *buf = calloc(len, sizeof(char));
+  strncpy(buf, c, len);
+  buf[len] = '\0';
+  return buf;
 }
