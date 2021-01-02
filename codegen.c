@@ -8,15 +8,14 @@ void gen_lval(Node *node) {
   printf("  # gen lval\n");
   if (node->kind == ND_LVAR) {
     // ローカル変数の場合
-    // rax にベースポインタをもってくる
-    printf("  mov rax, rbp\n");
     // ベースポインタからその変数へのオフセットを引くことで、変数のアドレスを得る
-    printf("  sub rax, %d\n", node->offset);
+    printf("  lea rax, -%d[rbp]\n", node->offset);
     // 変数のアドレスをスタックに積む
     printf("  push rax # variable's address\n");
   } else if (node->kind == ND_GVAR) {
-    // グローバル変数の場合、変数のアドレスを得る
-    printf("  lea rax, DWORD PTR %s[rip]\n", node->var->name);
+    // グローバル変数の場合
+    // ripからその変数へのオフセットを引くことで、変数のアドレスを得る
+    printf("  lea rax, %s[rip]\n", node->var->name);
     printf("  push rax # variable's address\n");
   } else if (node->kind == ND_DEREF) {
     // * の右側を普通の値だと思ってコンパイルする
