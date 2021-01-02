@@ -397,6 +397,7 @@ Node *primary() {
     if (lvar) {
       // 見つかればオフセットはそれと同じになる
       var_node->offset = lvar->offset;
+      var_node->var = lvar;
       // 型は変数の型
       // この時点でTの配列の型をTへのポインタ型としてしまうことはできない
       // sizeof があるから
@@ -459,6 +460,7 @@ Node *primary() {
     if (lvar) {
       // 見つかればオフセットはそれと同じになる
       node->offset = lvar->offset;
+      node->var = lvar;
       // 型は変数の型
       // この時点でTの配列の型をTへのポインタ型としてしまうことはできない
       // sizeof があるから

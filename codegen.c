@@ -5,18 +5,17 @@ int label_id = 1;
 
 // 左辺値の表すアドレスをスタックに積むコードを出力する
 void gen_lval(Node *node) {
-  printf("  # gen lval\n");
   if (node->kind == ND_LVAR) {
     // ローカル変数の場合
     // ベースポインタからその変数へのオフセットを引くことで、変数のアドレスを得る
     printf("  lea rax, -%d[rbp]\n", node->offset);
     // 変数のアドレスをスタックに積む
-    printf("  push rax # variable's address\n");
+    printf("  push rax # address of %s\n", node->var->name);
   } else if (node->kind == ND_GVAR) {
     // グローバル変数の場合
     // ripからその変数へのオフセットを引くことで、変数のアドレスを得る
     printf("  lea rax, %s[rip]\n", node->var->name);
-    printf("  push rax # variable's address\n");
+    printf("  push rax # address of %s\n", node->var->name);
   } else if (node->kind == ND_DEREF) {
     // * の右側を普通の値だと思ってコンパイルする
     gen(node->lhs);
@@ -75,7 +74,6 @@ void gen(Node *node) {
     }
   // ローカル変数
   case ND_LVAR:
-    printf("  # lvar\n");
     // 左辺値の指すアドレスをスタックに積むコードを生成
     gen_lval(node);
     if (node->type->kind == ARRAY) {
