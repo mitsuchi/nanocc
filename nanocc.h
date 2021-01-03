@@ -11,6 +11,14 @@
 // 文字列の処理: strcpy など
 #include <string.h>
 
+// 文字列の型
+struct String {
+  char *str;
+  struct String *next;
+  int index; // 何番目に出現した文字列か。.LC0, .LC1 のようなラベルに使う
+};
+typedef struct String String;
+
 // 値の型
 struct Type {
   enum { UNDEF, CHAR, INT, PTR, ARRAY } kind; // undef を 0 にして偽の印にする
@@ -42,6 +50,7 @@ typedef enum {
   ND_LT, // <
   ND_LTE, // <=
   ND_NUM, // 整数
+  ND_STRING, // 文字列
   ND_ASSIGN, // =
   ND_LVAR,   // ローカル変数
   ND_GVAR,   // グローバル変数
@@ -80,6 +89,7 @@ struct Node {
   LVar *locals;   // 関数定義の際に、ローカル変数のリストの先頭を指す
                   // 新しい要素は先頭につないでいくので、先頭アドレスは最後に足した要素を指す
   LVar *var;      // グローバル変数 ND_GVAR の場合に、変数を指す
+  String *string; // 文字列リテラル
 };
 
 // トークンの種類
@@ -96,6 +106,7 @@ typedef enum {
   TK_INT,      // int
   TK_CHAR,     // CHAR
   TK_SIZEOF,   // sizeof 演算子
+  TK_STRING,   // 文字列リテラル
 } TokenKind;
 
 typedef struct Token Token;
@@ -107,6 +118,7 @@ struct Token {
   int val;        // kindがTK_NUMの場合、その数値
   char *str;      // 文字列の開始位置
   int len;        // 文字列の長さ
+  String *string; // 文字列リテラル
 };
 
 Token *tokenize(char *p);
@@ -123,6 +135,7 @@ extern Token *token;
 void program();
 void gen(Node *node);
 void gen_global_var();
+void gen_strings();
 
 // プログラムを構成する文の並びを入れておく
 Node *code[100];
@@ -140,6 +153,11 @@ Node *cur_func;
 // グローバル変数のリストの先頭。
 // リストを伸ばすときは先頭が交代していくようにする
 LVar *global_var_list;
+
+// 文字列のリストの先頭
+// リストを伸ばすときは先頭が交代していくようにする
+String *string_list;
+int string_index;
 
 // その型の値を持つのに必要なサイズ
 int type_size (Type *type);
@@ -159,6 +177,7 @@ void expect(char *op);
 int expect_number();
 int expect_type();
 int consume_type();
+String *consume_string();
 
 // type
 Type *new_type(int kind);
@@ -175,3 +194,4 @@ Node *new_node_unary(NodeKind kind, Node *lhs);
 Node *new_node_bin(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 Node *new_node(NodeKind kind);
+Node *new_node_string(String *string);

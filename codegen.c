@@ -326,6 +326,12 @@ void gen(Node *node) {
     // なにもしないが、何かを積む約束になっているので 0 を積む
     printf("  push 0 # do nothing\n");
     return;
+  // 文字列
+  case ND_STRING:
+    // 文字列のアドレスを rax に load する
+    printf("  lea rax, .LC%d[rip]\n", node->string->index);
+    printf("  push rax\n");
+    return;
   }
 
   // 二項演算なら左辺と右辺がそれぞれ最終的に
@@ -421,6 +427,18 @@ void gen_global_var() {
     }
     printf("	.text\n");
   }
+}
+
+// 文字列があれば、領域を確保するコードを出力する
+void gen_strings() {
+  if (string_list) {
+    String *cur = string_list;
+    while (cur) {
+      printf(".LC%d:\n", cur->index);
+      printf("  .string \"%s\"\n", cur->str);
+      cur = cur->next;
+    }
+  }    
 }
 
 // プログラムの特定の位置の行の全体を取り出す

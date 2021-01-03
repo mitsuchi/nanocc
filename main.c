@@ -32,6 +32,9 @@ int main(int argc, char **argv) {
 
   // グローバル変数を出力する
   gen_global_var();
+
+  // 文字列を出力する
+  gen_strings();
   
   // 先頭の関数定義から順にコード生成
   for (int i = 0; func_defs[i]; i++) {

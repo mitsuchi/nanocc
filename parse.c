@@ -24,10 +24,10 @@
 //            | "&" unary
 //            | "sizeof" unary
 // primary    = num
+//            | '"' string '"'
 //            | ident ("(" expr? ("," expr)* ")")?
 //            | ident "[" expr "]"
 //            | "(" expr ")"
-
 Node *global_var_or_funcs();
 Node *func_def();
 Node *stmt();
@@ -179,7 +179,7 @@ Node *stmt() {
       // * が一つ来るごとに、* -> * -> .. -> Int の先頭のリストを伸ばす
       append_type(PTR, &head, &tail);
     }
-    // 型のリストの末尾はつねに int または char
+    // 型のリストの末尾は int または char
     append_type(type_kind, &head, &tail);
     // 次は識別子のはず
     Token *tok = expect_ident();
@@ -376,6 +376,7 @@ Node *unary() {
 
 // 数値かカッコ式をパーズする
 // primary    = num
+//            | '"' string '"'
 //            | ident ("(" expr? ("," expr)* ")")?
 //            | "(" expr ")"
 //            | ident "[" expr "]"
@@ -488,8 +489,13 @@ Node *primary() {
     }
     return node;
   }
-  // そうでなければ数値のはず
-  return num();
+  // そうでなければ数値または文字列のはず
+  String *string;
+  if (string = consume_string()) {
+    return new_node_string(string);
+  } else {
+    return num();
+  }
 }
 
 // 数値をパーズする

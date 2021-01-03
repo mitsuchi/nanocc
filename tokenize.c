@@ -37,6 +37,17 @@ void expect_rword(int kind, char *rword) {
   token = token->next;
 }
 
+String *consume_string() {
+  // トークンの種類が文字列なら、指している文字列を返す
+  if (token->kind == TK_STRING) {
+    String *string = token->string;
+    // トークンを読み進める
+    token = token->next;
+    return string;
+  }
+  return NULL;
+}
+
 // 次のトークンが識別子のときには、トークンを1つ読み進めてから
 // もとの識別子トークンを返す。そうでない場合には NULL を返す。
 Token *consume_ident() {
@@ -126,6 +137,21 @@ int is_alnum(char c) {
          (c == '_');
 }
 
+// 新しい文字列リテラルを作成して string_list につなげる
+void append_string(char *str, int len) {
+  String *s = calloc(1, sizeof(String));
+  char *string = calloc(len+1, sizeof(char));
+  strncpy(string, str, len+1);
+  string[len+1] = '\0';
+  s->str = string;
+  s->index = string_index;
+  string_index++;
+  if (string_list) {
+    s->next = string_list;
+  }
+  string_list = s;
+}
+
 // 新しいトークンを作成してcurに繋げる
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   Token *tok = calloc(1, sizeof(Token));
@@ -153,6 +179,7 @@ Token *tokenize(char *p) {
   Token head;
   head.next = NULL;
   Token *cur = &head;
+  string_index = 0;
 
   while (*p) {
     // 空白文字をスキップ
@@ -173,6 +200,21 @@ Token *tokenize(char *p) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     }
+    // '"' が来た場合は次の '"" まで読む
+    if (*p == '"') {
+      p++;
+      char *p0 = p;
+      while (*p != '"') {
+        p++;
+      }
+      int len = p - p0 -1;
+      cur = new_token(TK_STRING, cur, p0, len);
+      cur->len = len;
+      append_string(p0, len);
+      cur->string = string_list;
+      p++;
+      continue;
+    }
     if (new_token_if_keyword("return", TK_RETURN, &cur, &p)) continue;
     // if だったらそれを返す
     if (new_token_if_keyword("if", TK_IF, &cur, &p)) continue;
@@ -185,7 +227,7 @@ Token *tokenize(char *p) {
     // int
     if (new_token_if_keyword("int", TK_INT, &cur, &p)) continue;
     // char
-    if (new_token_if_keyword("char", TK_INT, &cur, &p)) continue;
+    if (new_token_if_keyword("char", TK_CHAR, &cur, &p)) continue;
     // sizeof
     if (new_token_if_keyword("sizeof", TK_SIZEOF, &cur, &p)) continue;
     // 1文字のアルファベットを見つけたら

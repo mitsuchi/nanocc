@@ -87,3 +87,15 @@ Node *new_node_num(int val) {
   node->type = new_type(INT);
   return node;
 }
+
+// 文字列のASTノードを作る
+Node *new_node_string(String *string) {
+  Node *node = calloc(1, sizeof(Node));
+  node->kind = ND_STRING;
+  node->string = string;
+  Type *charT = new_type(CHAR);
+  Type *ptr = new_type(PTR);
+  ptr->ptr_to = charT;
+  node->type = ptr;
+  return node;
+}
