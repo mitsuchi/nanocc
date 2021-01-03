@@ -246,6 +246,9 @@ void gen(Node *node) {
     strncpy(func_name, node->str, node->len);
     func_name[node->len] = '\0';
     // todo: rsp が16の倍数になっていなければ調整、のコードを入れる
+    // 可変長引数を取る関数を呼ぶときは、浮動小数点数の引数の個数をALに入れておく
+    // さしあたりつねに al を 0 にセットしておく
+    printf("  mov al, 0\n");
     printf("  call %s\n", func_name);
     // 関数の戻り値が rax に入っているのでスタックに積む
     printf("  push rax\n");
