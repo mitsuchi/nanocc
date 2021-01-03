@@ -95,7 +95,6 @@ int main() {
      rari 
      po   */
   // hoge hoge
-  printf("OK\n");
 }
 
 int id(int x){
