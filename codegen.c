@@ -3,6 +3,30 @@
 // ラベルの末尾につける通し番号
 int label_id = 1;
 
+// rax の指す値を raxレジスタに持ってくる
+// type は値の型
+void load(Type *type) {
+  if (type_size(type) == 4) {
+    printf("  mov eax, DWORD PTR [rax]\n");
+  } else if (type_size(type) == 1) {
+    printf("  movsx ecx, BYTE PTR [rax]\n");
+  } else {
+    printf("  mov rax, [rax]\n");
+  }
+}
+
+// rax の指すアドレスに、rdi の値を入れる
+// type は値の型
+void store(Type *type) {
+  if (type_size(type) == 4) {
+    printf("  mov DWORD PTR [rax], edi\n");
+  } else if (type_size(type) == 1) {
+    printf("  mov BYTE PTR [rax], cl\n");
+  } else {
+    printf("  mov [rax], rdi\n");
+  }
+}
+
 // 左辺値の表すアドレスをスタックに積むコードを出力する
 void gen_lval(Node *node) {
   if (node->kind == ND_LVAR) {
@@ -65,14 +89,8 @@ void gen(Node *node) {
     // 配列以外ならアドレスの指す値を持ってくる
     // 左辺値の指すアドレスを rax に持ってくる
     printf("  pop rax\n");
-    // アドレスの指す値を rax に持ってくる
-    if (type_size(node->type) == 4) {
-      printf("  mov eax, DWORD PTR [rax]\n");
-    } else if (type_size(node->type) == 1) {
-      printf("  movsx ecx, BYTE PTR [rax]\n");
-    } else {
-      printf("  mov rax, [rax]\n");
-    }
+    // rax の指すアドレスにある値を rax に持ってくる
+    load(node->type);
   // ローカル変数
   case ND_LVAR:
     // 左辺値の指すアドレスをスタックに積むコードを生成
@@ -84,14 +102,8 @@ void gen(Node *node) {
     // 配列以外ならアドレスの指す値を持ってくる
     // 左辺値の指すアドレスを rax に持ってくる
     printf("  pop rax\n");
-    // アドレスの指す値を rax に持ってくる
-    if (type_size(node->type) == 4) {
-      printf("  mov eax, DWORD PTR [rax]\n");
-    } else if (type_size(node->type) == 1) {
-      printf("  movzx ecx, BYTE PTR [rax]\n");
-    } else {
-      printf("  mov rax, [rax]\n");
-    }
+    // rax の指すアドレスにある値を rax に持ってくる
+    load(node->type);
     // 持ってきた値をスタックに積む
     printf("  push rax\n");
     return;
@@ -107,14 +119,9 @@ void gen(Node *node) {
     printf("  pop rdi\n");
     // 左辺値のアドレスを rax に持ってくる
     printf("  pop rax\n");
-    // 左辺値のアドレスに右辺値の値をストアする
-    if (type_size(node->rhs->type) == 4) {
-      printf("  mov DWORD PTR [rax], edi\n");
-    } else if (type_size(node->rhs->type) == 1) {
-      printf("  mov BYTE PTR [rax], cl\n");
-    } else {
-      printf("  mov [rax], rdi\n");
-    }
+    // 左辺値のアドレスに右辺値の値を入れる
+    // rax の指すアドレスに、rdi の値を入れる
+    store(node->rhs->type);
     // 右辺値をスタックに積む。つまり代入式の値は右辺値。
     printf("  push rdi\n");
     return; 
@@ -309,14 +316,8 @@ void gen(Node *node) {
     gen(node->lhs);
     // 値を rax に持ってくる
     printf("  pop rax\n");
-    // 値をアドレスだと思って、その指す値を rax に取り出す
-    if (type_size(node->lhs->type) == 4) {
-      printf("  mov eax, DWORD PTR [rax]\n");
-    } else if (type_size(node->lhs->type) == 1) {
-      printf("  movzx ecx, BYTE PTR [rax]\n");
-    } else {
-      printf("  mov rax, [rax]\n");
-    }
+    // rax の指すアドレスにある値を rax に持ってくる
+    load(node->lhs->type);
     // rax をスタックに積む
     printf("  push rax\n");
     return;
