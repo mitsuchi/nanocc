@@ -12,7 +12,7 @@
 //            | "if" "(" expr ")" stmt ("else" stmt)?
 //            | "while" "(" expr ")" stmt
 //            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
-// typ        = "int" | "char"
+// type       = "int" | "char"
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -57,8 +57,8 @@ void program() {
 
 // 関数定義をパーズする
 // global_var_or_funcs 
-//            = ( "int" "*"* ident ("(" ("int" "*"* ident)? ("," "int" "*"* ident)* ")")? "{" stmt* "}"
-//            | "int" "*"* ident ("[" num "]")? ";" )*
+//            = ( type "*"* ident ("(" (type "*"* ident)? ("," type "*"* ident)* ")")? "{" stmt* "}"
+//            | type "*"* ident ("[" num "]")? ";" )*
 Node *global_var_or_funcs() {
   // "int" または "char" が来るはず
   int type_kind = expect_type();
@@ -161,7 +161,7 @@ Node *global_var_or_funcs() {
 
 // 文をパーズする
 // stmt       = expr ";"
-//            | "int" "*"* ident ("[" num "]")? ";"
+//            | type "*"* ident ("[" num "]")? ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
@@ -169,7 +169,7 @@ Node *global_var_or_funcs() {
 //            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 Node *stmt() {
   Node *node;
-  // 変数定義 "int" "*"* ident ("[" num "]")? ";"
+  // 変数定義 type "*"* ident ("[" num "]")? ";"
   int type_kind = consume_type();
   if (type_kind) {
     // 次には "*"* が来る
