@@ -136,7 +136,8 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   return tok;
 }
 
-// return だったらそれを返す
+// 想定するキーワードの場合は新しいトークンを作成してリストの末尾につなげ、真を返す
+// そうでない場合は偽を返す
 bool new_token_if_keyword(char *str, TokenKind kind, Token **cur, char **p) {
   int len = strlen(str);
   if (strncmp(*p, str, len) == 0 && !is_alnum((*p)[len])) {
