@@ -1,0 +1,128 @@
+int xs[2];
+
+int assert(int expected, int actual, char *msg) {
+  if (expected == actual) {
+    printf("%s => %d\n", msg, actual);
+  } else {
+    printf("%s => %d expected, but got %d\n", msg, expected, actual);
+  }
+}
+
+int main() {
+  assert(42, 42, "42");
+  assert(31, 5*6+1, "5*6+1");
+  assert(0, 10 >= 11, "10 >= 11");
+  assert(1, 10 >= 10, "10 >= 10");
+  assert(1, 10 >= 9, "10 >= 9");
+  assert(0, 10 > 11, "10 > 11");
+  assert(0, 10 > 10, "10 > 10");
+  assert(1, 10 > 9, "10 > 9");
+  assert(0, 10 <= 9, "10 <= 9");
+  assert(1, 10 <= 10, "10 <= 10");
+  assert(1, 10 <= 11, "10 <= 11");
+  assert(25, 5+20, "5+20");
+  assert(21, 5+20-4, "5+20-4");
+  assert(7, 1+2*3, "1+2*3");
+  assert(5, 1*2+3, "1*2+3");
+  assert(2, 1+2*3/4, "1+2*3/4");
+  assert(14, 2*(3+4), "2*(3+4)");
+  assert(94, 2*(3+(4*(5+6))), "2*(3+(4*(5+6)))");
+  assert(2, -3+5, "-3+5");
+  assert(2, -(3+5)+10, "-(3+5)+10");
+  assert(5, -3*+5 + 20, "-3*+5 + 20");
+  assert(1, 12==12, "12==12");
+  assert(0, 123==12, "123==12");
+  assert(1, 45!=12, "45!=12");
+  assert(0, 45!=45, "45!=45");
+  assert(0, 10 < 9, "10 < 9");
+  assert(0, 10 < 10, "10 < 10");
+  assert(1, 10 < 11, "10 < 11");
+  int a; if (2 < 1) a = 3; else a = 4;
+  assert(4, a, "int a; if (2 < 1) a = 3; else a = 4;");
+  if (2 < 1) a = 3; else a = 4;
+  assert(4, a, "if (2 < 1) a = 3; else a = 4;");
+  if (1 < 2) a = 3;
+  assert(3, a, "if (1 < 2) a = 3;");
+  a = 1; while (a < 5) a = a + a;
+  assert(8, a, "int a = 1; while (a < 5) a = a + a;");
+  int b; b = 0; for (a = 0; a < 10; a = a + 1) b = b + a;
+  assert(45, b, "int b; b = 0; for (a = 0; a < 10; a = a + 1) b = b + a;");
+  a = 0; b = 0; while (a < 9) {a = a + 1; b = b + a;}
+  assert(45, b, "int a; int b; a = 0; b = 0; while (a < 9) {a = a + 1; b = b + a;} return b;");
+  assert(42, fourtytwo(), "int fourtytwo(){return 42;} int main(){return fourtytwo();}");
+  assert(55, fib(9), "int fib(int n){if(n < 2) {return 1;} else {return (fib(n-1) + fib(n-2));}} int main(){return fib(9);}");
+  assert(30, add(10,20), "int add(int x,int y){return x+y;} int main(){return add(10,20);}");
+  int c[2]; *c = 1; *(c + 1) = 2;
+  assert(3, *c + *(c + 1), "int a[2]; *a = 1; *(a + 1) = 2; *a + *(a + 1);");
+  *c = 42; *(c + 1) = 43;
+  assert(43, *(c + 1), "int a[2]; *a = 42; *(a + 1) = 43; *(a + 1);");
+  *c = 42;
+  assert(42, *c, "int a[3]; *a = 42; *a;");
+  assert(84, double(42), "int double(int x){return x*2;} int main(){return double(42);}");
+  assert(42, idy(42), "int id(int x){int y; return x;} int main(){return id(42);}");
+  assert(42, id(42), "int id(int x){return x;} int main(){return id(42);}");
+  int x; x = 42;
+  assert(42, x, "int x; x = 42; x;");
+  int *y; y = &x; *y = 3;
+  assert(3, x, "int x; int *y; y = &x; *y = 3; x");
+  x = 3; y = &x;
+  assert(3, *y, "int x; int *y; x = 3; y = &x; *y;");
+  int xx; int yy; int *zz; xx = 3; yy = 5; zz = &yy+1;
+  assert(3, *zz, "int x; int y; int *z; x = 3; y = 5; z = &y+1; *z;");
+  xx = 3; yy = 5; zz = &yy; 
+  assert(3, *(zz+1), "int x; int y; int *z; x = 3; y = 5; z = &y; *(z+1);");
+  int aa[2]; *aa = 1; *(aa + 1) = 2; int *p; p = aa;
+  assert(3, *p + *(p+1), "int a[2]; *a = 1; *(a + 1) = 2; int *p; p = a; *p + *(p + 1);");
+  aa[0] = 1; aa[1] = 2;
+  assert(2, aa[1], "int a[2]; a[0] = 1; a[1] = 2; a[1];");
+  aa[0] = 42;
+  assert(42, 42, "int a[1]; a[0] = 42; return a[0];");
+  assert(4, sizeof sizeof 1, "sizeof sizeof 1");
+  assert(4, sizeof *y, "int *y; sizeof *y;");
+  assert(8, sizeof (y+3), "int *y; sizeof (y+3);");
+  assert(4, sizeof (x+3), "int x; sizeof (x+3)");
+  assert(8, sizeof y, "int *y; sizeof y;");
+  assert(4, sizeof x,  "int x; sizeof x;");
+  assert(4, sizeof 1, "sizeof 1");
+  xs[0] = 10; xs[1] = 20;
+  // assert(30, xs[0], "int x[2]; int main(){ x[0] = 10; x[1] = 20; return x[0] + x[1];}");
+  char cs[3]; cs[0] = -1; cs[1] = 2; int iy; iy = 4;
+  // assert(3, cs[0] + iy, "char x[3]; x[0] = -1; x[1] = 2; int y; y = 4; x[0] + y;");
+  char *xabc; xabc = "abc";
+  // assert 97 'int main(){ char *x; x = "abc"; return x[0];}'
+  // assert 98 'int main(){ char *x; x = "abc"; return x[1];}'
+  /* hoge
+     rari 
+     po   */
+  // hoge hoge
+  printf("OK\n");
+}
+
+int id(int x){
+  return x;
+}
+
+int idy(int x){
+  int y;
+  return x;
+}
+
+int double(int x) {
+  return x * 2;
+}
+
+int add(int x,int y) {
+  return x+y;
+}
+
+int fib(int n) {
+  if(n < 2) {
+    return 1;
+  } else {
+    return fib(n-1) + fib(n-2);
+  }
+}
+
+int fourtytwo () {
+  return 42;
+}
