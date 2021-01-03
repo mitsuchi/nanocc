@@ -109,7 +109,7 @@ void gen(Node *node) {
     return;
   // 代入式
   case ND_ASSIGN:
-    printf("  # %s\n", source_code(node->str));
+    printf("  # %s\n", source_code(node->src_pos));
     // まず左辺のアドレスをスタックに積む
     gen_lval(node->lhs);
     // 右辺値をスタックに積む
@@ -231,7 +231,7 @@ void gen(Node *node) {
     return;
   // 関数呼び出し
   case ND_CALL:
-    printf("  # %s\n", source_code(node->str));
+    printf("  # %s\n", source_code(node->src_pos));
     // 引数を順にコンパイルする
     for (int i = 0; i < node->argc; i++) {
       gen(node->args[i]);

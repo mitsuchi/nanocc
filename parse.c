@@ -263,7 +263,7 @@ Node *stmt() {
     node->body = stmt();
   } else {
     node = expr();
-    node->str = token->str;
+    node->src_pos = token->str;
     expect(";");
   } 
   return node;
