@@ -450,7 +450,7 @@ char *source_code(char *pos) {
   char *c = pos - 1;
   int len = 0;
   while (user_input <= c) {
-    if (*c == ';' || *c == '{') {
+    if (*c == ';' || *c == '{' || *c == '\n') {
       break;
     }
     c--;
@@ -460,7 +460,7 @@ char *source_code(char *pos) {
   // 後方の ";" を探す
   char *d = pos;
   while (*d != '\0') {
-    if (*d == ';')
+    if (*d == ';' || *c == '\n')
       break;
     d++;
     len++;

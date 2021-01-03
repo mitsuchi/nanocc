@@ -1,5 +1,7 @@
 // 文字の処理を行う関数群: isspace など
 #include <ctype.h>
+// errno の定義
+#include <errno.h>
 // 可変長引数の関数群: va_start など
 #include <stdarg.h>
 // 真偽値 true, false
@@ -141,10 +143,6 @@ void gen_strings();
 // プログラムを構成する文の並びを入れておく
 Node *code[100];
 
-// エラーを報告するための関数
-// printfと同じ引数を取る
-void error(char *fmt, ...);
-
 // トップレベルにある関数定義の並びを入れておく
 Node *func_defs[100];
 
@@ -196,3 +194,6 @@ Node *new_node_bin(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 Node *new_node(NodeKind kind);
 Node *new_node_string(String *string);
+
+// 入力ファイル名
+char *filename;

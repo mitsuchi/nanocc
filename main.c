@@ -10,6 +10,9 @@ Token *token;
 // 新しい要素は先頭につないでいくので、先頭アドレスは最後に足した要素を指す
 LVar *locals = NULL;
 
+// 指定されたファイルの内容を返す
+char *read_file(char *path);
+
 // argc はコンパイラーへの引数の数(+1)
 // argv は引数の文字列の先頭へのポインターを納めた配列へのポインター
 int main(int argc, char **argv) {
@@ -19,10 +22,11 @@ int main(int argc, char **argv) {
   }
 
   // エラー表示に使うためにプログラムの先頭を指しておく
-  user_input = argv[1];
+  filename = argv[1];
+  user_input = read_file(filename);
 
   // トークナイズする
-  token = tokenize(argv[1]);
+  token = tokenize(user_input);
 
   // 全体を文の並びとして構文解析する
   program();
@@ -43,4 +47,30 @@ int main(int argc, char **argv) {
 
   // 正常終了コードを返す
   return 0;
+}
+
+// 指定されたファイルの内容を返す
+char *read_file(char *path) {
+  // ファイルを開く
+  FILE *fp = fopen(path, "r");
+  if (!fp)
+    error("cannot open %s: %s", path, strerror(errno));
+
+  // ファイルの長さを調べる
+  if (fseek(fp, 0, SEEK_END) == -1)
+    error("%s: fseek: %s", path, strerror(errno));
+  size_t size = ftell(fp);
+  if (fseek(fp, 0, SEEK_SET) == -1)
+    error("%s: fseek: %s", path, strerror(errno));
+
+  // ファイル内容を読み込む
+  char *buf = calloc(1, size + 2);
+  fread(buf, size, 1, fp);
+
+  // ファイルが必ず"\n\0"で終わっているようにする
+  if (size == 0 || buf[size - 1] != '\n')
+    buf[size++] = '\n';
+  buf[size] = '\0';
+  fclose(fp);
+  return buf;
 }

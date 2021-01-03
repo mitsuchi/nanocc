@@ -3,7 +3,8 @@ assert() {
   expected="$1"
   input="$2"
 
-  ./nanocc "$input" > tmp.s
+  echo "$input" > tmp.c
+  ./nanocc tmp.c > tmp.s
   cc -o tmp tmp.s
   ./tmp
   actual="$?"
