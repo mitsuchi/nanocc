@@ -1,6 +1,7 @@
 #!/bin/bash
 
-./nanocc "$1" > tmp.s
+echo "$1" > tmp.c
+./nanocc tmp.c > tmp.s
 cc -o tmp tmp.s
 ./tmp
 echo $?
