@@ -13,7 +13,7 @@
 
 // 値の型
 struct Type {
-  enum { CHAR, INT, PTR, ARRAY } kind;
+  enum { UNDEF, CHAR, INT, PTR, ARRAY } kind; // undef を 0 にして偽の印にする
   struct Type *ptr_to;
   size_t array_size; // 配列のときのみ使う。配列の要素数。
 };
@@ -157,6 +157,8 @@ Token *consume_ident();
 Token *expect_ident();
 void expect(char *op);
 int expect_number();
+int expect_type();
+int consume_type();
 
 // type
 Type *new_type(int kind);

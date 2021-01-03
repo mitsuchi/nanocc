@@ -60,6 +60,33 @@ Token *expect_ident() {
   return ident_token;
 }
 
+// 次のトークンが型名の場合、トークンを1つ読み進めて型の種類を返す
+// そうでない場合はエラー
+int expect_type() {
+  int type_kind;
+  if (consume_reserved(TK_INT)) {
+    type_kind = INT;
+  } else if (consume_reserved(TK_CHAR)) {
+    type_kind = CHAR;
+  } else {
+    error_at(token->str, "int または char ではありません");
+  }
+  return type_kind;
+}
+
+// 次のトークンが型名の場合、トークンを1つ読み進めて型の種類を返す
+// そうでない場合は 0 を返す
+int consume_type() {
+  int type_kind = 0;
+  if (consume_reserved(TK_INT)) {
+    type_kind = INT;
+  } else if (consume_reserved(TK_CHAR)) {
+    type_kind = CHAR;
+  }
+  // 0 に対応する型はない（UNDEF）ので、0 なら型名ではなかったことになる
+  return type_kind;
+}
+
 // 次のトークンが期待している記号のときには、トークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
 void expect(char *op) {

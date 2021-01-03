@@ -2,16 +2,17 @@
 
 // 全体の EBNF
 // program    = global_var_or_funcs*
-// global_var_or_funcs 
-//            = ( "int" "*"* ident ("(" ("int" "*"* ident)? ("," "int" "*"* ident)* ")")? "{" stmt* "}"
-//            | "int" "*"* ident ("[" num "]")? ";" )*
+// global_var_or_funcs
+//            = ( type "*"* ident ("(" (type "*"* ident)? ("," type "*"* ident)* ")")? "{" stmt* "}"
+//            | type "*"* ident ("[" num "]")? ";" )*
 // stmt       = expr ";"
-//            | "int" "*"* ident ("[" num "]")? ";"
+//            | type "*"* ident ("[" num "]")? ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
 //            | "while" "(" expr ")" stmt
 //            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+// typ        = "int" | "char"
 // expr       = assign
 // assign     = equality ("=" assign)?
 // equality   = relational ("==" relational | "!=" relational)*
@@ -60,14 +61,7 @@ void program() {
 //            | "int" "*"* ident ("[" num "]")? ";" )*
 Node *global_var_or_funcs() {
   // "int" または "char" が来るはず
-  int type_kind;
-  if (consume_reserved(TK_INT)) {
-    type_kind = INT;
-  } else if (consume_reserved(TK_CHAR)) {
-    type_kind = CHAR;
-  } else {
-    error_at(token->str, "int または char ではありません");
-  }
+  int type_kind = expect_type();
   // 次には "*"* が来る
   Type *head = NULL;
   Type *tail = NULL;
@@ -93,14 +87,7 @@ Node *global_var_or_funcs() {
     // 次が ")" でないのなら識別子が続く
     while (!consume(")")) {
       // "int" または "char" が来るはず
-      int type_kind;
-      if (consume_reserved(TK_INT)) {
-        type_kind = INT;
-      } else if (consume_reserved(TK_CHAR)) {
-        type_kind = CHAR;
-      } else {
-        error_at(token->str, "int または char ではありません");
-      }
+      int type_kind = expect_type();
       // 次には "*"* が来る
       Type *head = NULL;
       Type *tail = NULL;
@@ -183,16 +170,8 @@ Node *global_var_or_funcs() {
 Node *stmt() {
   Node *node;
   // 変数定義 "int" "*"* ident ("[" num "]")? ";"
-  int type_kind;
-  int var_decl = false;
-  if (consume_reserved(TK_INT)) {
-    type_kind = INT;
-    var_decl = true;
-  } else if (consume_reserved(TK_CHAR)) {
-    type_kind = CHAR;
-    var_decl = true;
-  } 
-  if (var_decl) {
+  int type_kind = consume_type();
+  if (type_kind) {
     // 次には "*"* が来る
     Type *head = NULL; // 型を表すリストの先頭
     Type *tail = NULL; // リストの末尾
@@ -201,7 +180,7 @@ Node *stmt() {
       append_type(PTR, &head, &tail);
     }
     // 型のリストの末尾はつねに int または char
-    append_type(INT, &head, &tail);
+    append_type(type_kind, &head, &tail);
     // 次は識別子のはず
     Token *tok = expect_ident();
     // 次に "[" が来たら配列の宣言
