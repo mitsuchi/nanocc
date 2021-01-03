@@ -17,6 +17,7 @@ assert() {
   fi
 }
 
+assert 42 'int main(){ /* hoge */ return 42;}'
 assert 97 'int main(){ char *x; x = "abc"; return x[0];}'
 assert 98 'int main(){ char *x; x = "abc"; return x[1];}'
 assert 3 "int main(){ char x[3]; x[0] = -1; x[1] = 2; int y; y = 4; return x[0] + y;}"
