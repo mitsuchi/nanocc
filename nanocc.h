@@ -13,7 +13,7 @@
 
 // 値の型
 struct Type {
-  enum { INT, PTR, ARRAY } kind;
+  enum { CHAR, INT, PTR, ARRAY } kind;
   struct Type *ptr_to;
   size_t array_size; // 配列のときのみ使う。配列の要素数。
 };
@@ -94,6 +94,7 @@ typedef enum {
   TK_NUM,      // 整数トークン
   TK_EOF,      // 入力の終わりを表すトークン
   TK_INT,      // int
+  TK_CHAR,     // CHAR
   TK_SIZEOF,   // sizeof 演算子
 } TokenKind;
 

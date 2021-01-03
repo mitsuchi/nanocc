@@ -28,6 +28,8 @@ Type *append_type(int kind, Type **head, Type **tail) {
 
 int type_size (Type *type) {
   switch (type->kind) {
+    case CHAR:
+      return 1;    
     case INT:
       return 4;
     case PTR:

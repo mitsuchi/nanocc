@@ -68,6 +68,8 @@ void gen(Node *node) {
     // アドレスの指す値を rax に持ってくる
     if (type_size(node->type) == 4) {
       printf("  mov eax, DWORD PTR [rax]\n");
+    } else if (type_size(node->type) == 1) {
+      printf("  movsx ecx, BYTE PTR [rax]\n");
     } else {
       printf("  mov rax, [rax]\n");
     }
@@ -85,6 +87,8 @@ void gen(Node *node) {
     // アドレスの指す値を rax に持ってくる
     if (type_size(node->type) == 4) {
       printf("  mov eax, DWORD PTR [rax]\n");
+    } else if (type_size(node->type) == 1) {
+      printf("  movzx ecx, BYTE PTR [rax]\n");
     } else {
       printf("  mov rax, [rax]\n");
     }
@@ -106,6 +110,8 @@ void gen(Node *node) {
     // 左辺値のアドレスに右辺値の値をストアする
     if (type_size(node->rhs->type) == 4) {
       printf("  mov DWORD PTR [rax], edi\n");
+    } else if (type_size(node->rhs->type) == 1) {
+      printf("  mov BYTE PTR [rax], cl\n");
     } else {
       printf("  mov [rax], rdi\n");
     }
@@ -306,6 +312,8 @@ void gen(Node *node) {
     // 値をアドレスだと思って、その指す値を rax に取り出す
     if (type_size(node->lhs->type) == 4) {
       printf("  mov eax, DWORD PTR [rax]\n");
+    } else if (type_size(node->lhs->type) == 1) {
+      printf("  movzx ecx, BYTE PTR [rax]\n");
     } else {
       printf("  mov rax, [rax]\n");
     }

@@ -18,7 +18,6 @@ bool consume(char *op) {
 // 次のトークンが期待している予約語のときには、トークンを1つ読み進めて
 // 真を返す。それ以外の場合には偽を返す。
 bool consume_reserved(int kind) {
-  // トークンの種類がそもそも記号でないか
   if (token->kind == kind) {
     token = token->next;
     return true;
@@ -157,6 +156,8 @@ Token *tokenize(char *p) {
     if (new_token_if_keyword("for", TK_FOR, &cur, &p)) continue;
     // int
     if (new_token_if_keyword("int", TK_INT, &cur, &p)) continue;
+    // char
+    if (new_token_if_keyword("char", TK_INT, &cur, &p)) continue;
     // sizeof
     if (new_token_if_keyword("sizeof", TK_SIZEOF, &cur, &p)) continue;
     // 1文字のアルファベットを見つけたら
