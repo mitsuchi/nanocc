@@ -6,7 +6,7 @@
 //            = ( type "*"* ident ("(" (type "*"* ident)? ("," type "*"* ident)* ")")? "{" stmt* "}"
 //            | type "*"* ident ("[" num "]")? ";" )*
 // stmt       = expr ";"
-//            | type "*"* ident ("[" num "]")? ("=" (array_lit | expr))? ";"
+//            | type "*"* ident ("[" num? "]")? ("=" (array_lit | expr))? ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
@@ -206,7 +206,7 @@ Node *array_lit(Node *var_node) {
 
 // 文をパーズする
 // stmt       = expr ";"
-//            | type "*"* ident ("[" num "]")? ("=" (array_lit | expr))? ";"
+//            | type "*"* ident ("[" num? "]")? ("=" (array_lit | expr))? ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
@@ -215,7 +215,7 @@ Node *array_lit(Node *var_node) {
 Node *stmt() {
   Node *node;
   // 変数定義 
-  // type "*"* ident ("[" num "]")? ("=" expr)? ";"
+  // type "*"* ident ("[" num? "]")? ("=" expr)? ";"
   int type_kind = consume_type();
   if (type_kind) {
     // 次には "*"* が来る
@@ -231,14 +231,21 @@ Node *stmt() {
     Token *tok = expect_ident();
     // 次に "[" が来たら配列の宣言
     if (consume("[")) {
-      // 次は数字が来るはず
-      Node *num_node = num();
-      expect("]");
+      Node *num_node = NULL;
+      if (!consume("]")) {
+        num_node = num();
+        expect("]");
+      }
       // もし配列であれば、型は配列型で、
       // 要素の型 は head が指すものとする
       Type *type = new_type(ARRAY);
       type->ptr_to = head;
-      type->array_size = num_node->val;
+      if (num_node) {
+        type->array_size = num_node->val;
+      } else {
+        // 後ほど初期化式の長さで上書きする
+        type->array_size = 0;
+      }
       head = type;
     }
     // 変数宣言のノードをつくる
@@ -254,14 +261,22 @@ Node *stmt() {
       var_node->type = lvar->type;
 
       if (consume("{")) {
+        if (head->kind != ARRAY) {
+          error_at(token->str, "変数が配列ではありません");
+        }
         // 配列の初期化式
         Node *array_lit_node = array_lit(var_node);
         node->next = array_lit_node;
+        head->array_size = node_list_length(array_lit_node);
       } else {
         // int x = 3 のような形の初期化式
         // int x と x = 3 の二つの文に分解する
         Node *assign_node = new_node_bin(ND_ASSIGN, var_node, expr());
         node->next = assign_node;
+      }
+    } else {
+      if (head->kind == ARRAY && head->array_size == 0) {
+        error_at(token->str, "配列のサイズが空です");
       }
     }
     expect(";");

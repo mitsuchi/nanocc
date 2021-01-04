@@ -99,3 +99,13 @@ Node *new_node_string(String *string) {
   node->type = ptr;
   return node;
 }
+
+// next で辿っていけるリストの長さ
+int node_list_length(Node *node) {
+  int len = 0;
+  while (node) {
+    node = node->next;
+    len++;
+  }
+  return len;
+}

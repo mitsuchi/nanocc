@@ -195,6 +195,7 @@ Node *new_node_bin(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 Node *new_node(NodeKind kind);
 Node *new_node_string(String *string);
+int node_list_length(Node *node);
 
 // 入力ファイル名
 char *filename;

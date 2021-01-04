@@ -102,6 +102,8 @@ int main() {
   assert(10, xten, "int x = 10; x");
   int xtwo[2] = {4, 5};
   assert(5, xtwo[1], "int x[2] = {4, 5}; x[1]");
+  int xthree[] = {4, 5, 6};
+  assert(6, xthree[2], "int x[] = {4, 5, 6}; x[2]");
   return ng;
 }
 
