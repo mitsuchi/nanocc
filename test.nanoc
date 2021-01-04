@@ -1,14 +1,17 @@
 int xs[2];
+int ng;
 
 int assert(int expected, int actual, char *msg) {
   if (expected == actual) {
     printf("%s => %d\n", msg, actual);
   } else {
     printf("%s => %d expected, but got %d\n", msg, expected, actual);
+    ng = 1;
   }
 }
 
 int main() {
+  ng = 0;
   assert(42, 42, "42");
   assert(31, 5*6+1, "5*6+1");
   assert(0, 10 >= 11, "10 >= 11");
@@ -87,13 +90,14 @@ int main() {
   xs[0] = 10; xs[1] = 20;
   assert(30, xs[0] + xs[1], "int x[2]; int main(){ x[0] = 10; x[1] = 20; return x[0] + x[1];}");
   char cs[3]; cs[0] = -1; cs[1] = 2; int iy; iy = 4;
-  // assert(3, cs[0] + iy, "char x[3]; x[0] = -1; x[1] = 2; int y; y = 4; x[0] + y;");
+  assert(3, cs[0] + iy, "char x[3]; x[0] = -1; x[1] = 2; int y; y = 4; x[0] + y;");
   // assert 97 'int main(){ char *x; x = "abc"; return x[0];}'
   // assert 98 'int main(){ char *x; x = "abc"; return x[1];}'
   /* hoge
      rari 
      po   */
   // hoge hoge
+  return ng;
 }
 
 int id(int x){

@@ -4,4 +4,8 @@
 cc -o tmp tmp.s
 ./tmp
 
-echo OK
+if [ $? = 0 ]; then 
+  echo OK
+else
+  echo NG
+fi
