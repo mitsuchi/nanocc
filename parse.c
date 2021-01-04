@@ -31,6 +31,7 @@
 Node *global_var_or_funcs();
 Node *func_def();
 Node *stmt();
+Node *block();
 Node *expr();
 Node *assign();
 Node *equality();
@@ -120,28 +121,8 @@ Node *global_var_or_funcs() {
 
     // ブロックが来るはず
     expect("{");
-    // ブロックを表すノードを用意する
-    // node->next で複数の文をつないでいく
-    Node *block = new_node(ND_BLOCK);
-    // 文のリストの最後を指しておく
-    Node *last = block;
-    while (!consume("}")) {
-      // 文を1つパーズしてノードをつくる
-      Node *cur_node = stmt();
-      // それを文のリストにつなげる
-      last->next = cur_node;
-      // 最後を交代する
-      last = cur_node;
-      while (last->next) {
-        // stmt() がノードのリストを返すことがありうるので、
-        // 末尾まで移動しておく
-        last = last->next;
-      }
-    }
-    // 終末の次はNULLにしておく
-    last->next = NULL;
     // 関数定義の本体をブロックにする
-    node->body = block;
+    node->body = block();
     return node;
   } else {
     // "[" が来れば配列の宣言
@@ -162,6 +143,31 @@ Node *global_var_or_funcs() {
     register_global_var(tok->str, tok->len, head);
     expect(";");
   }
+}
+
+// {} で囲まれたブロックをパーズする
+Node *block() {
+  // ブロックを表すノードを用意する
+  // node->next で複数の文をつないでいく
+  Node *node = new_node(ND_BLOCK);
+  // 文のリストの最後を指しておく
+  Node *last = node;
+  while (!consume("}")) {
+    // 文を1つパーズしてノードをつくる
+    Node *cur_node = stmt();
+    // それを文のリストにつなげる
+    last->next = cur_node;
+    // 最後を交代する
+    last = cur_node;
+    while (last->next) {
+      // stmt() がノードのリストを返すことがありうるので、
+      // 末尾まで移動しておく
+      last = last->next;
+    }
+  }
+  // 終末の次はNULLにしておく
+  last->next = NULL;
+  return node;
 }
 
 // 文をパーズする
@@ -222,25 +228,7 @@ Node *stmt() {
   // block
   } else if (consume("{")) {
     // ブロックを表すノードを用意する
-    // node->next で複数の文をつないでいく
-    node = new_node(ND_BLOCK);
-    // 文のリストの最後を指しておく
-    Node *last = node;
-    while (!consume("}")) {
-      // 文を1つパーズしてノードをつくる
-      Node *cur_node = stmt();
-      // それを文のリストにつなげる
-      last->next = cur_node;
-      // 最後を交代する
-      last = cur_node;
-      while (last->next) {
-        // stmt() がノードのリストを返すことがありうるので、
-        // 末尾まで移動しておく
-        last = last->next;
-      }
-    }
-    // 終末の次はNULLにしておく
-    last->next = NULL;
+    node = block();
   // return
   } else if (consume_reserved(TK_RETURN)) {
     node = new_node_unary(ND_RETURN, expr());
