@@ -100,6 +100,8 @@ int main() {
   // hoge hoge
   int xten = 10;
   assert(10, xten, "int x = 10; x");
+  int xtwo[2] = {4, 5};
+  assert(5, xtwo[1], "int x[2] = {4, 5}; x[1]");
   return ng;
 }
 

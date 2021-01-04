@@ -6,12 +6,13 @@
 //            = ( type "*"* ident ("(" (type "*"* ident)? ("," type "*"* ident)* ")")? "{" stmt* "}"
 //            | type "*"* ident ("[" num "]")? ";" )*
 // stmt       = expr ";"
-//            | type "*"* ident ("[" num "]")? ("=" expr)? ";"
+//            | type "*"* ident ("[" num "]")? ("=" (array_lit | expr))? ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
 //            | "while" "(" expr ")" stmt
 //            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+// array_lit  = "{" (expr ("," expr)*)? "}"
 // type       = "int" | "char"
 // expr       = assign
 // assign     = equality ("=" assign)?
@@ -32,6 +33,7 @@ Node *global_var_or_funcs();
 Node *func_def();
 Node *stmt();
 Node *block();
+Node *array_lit(Node *var_node);
 Node *expr();
 Node *assign();
 Node *equality();
@@ -170,9 +172,41 @@ Node *block() {
   return node;
 }
 
+// 配列の初期化式をパーズする
+// array_lit  = "{" (expr ("," expr)*)? "}"
+Node *array_lit(Node *var_node) {
+  Node *head = NULL;
+  Node *tail = NULL;
+  int i = 0;
+  while (!consume("}")) {
+    // 次が "}" でないなら式がくるはず
+    Node *e = expr();
+    // "," が来たら読み飛ばす
+    consume(",");
+    // int x[] = {4, 5} のようなコードは
+    // int x[2]; x[0] = 4; x[1] = 5; のように分解する
+    // x[i] = e の部分を作る
+    Node *index = new_node_num(i);
+    i++;
+    Node *array_access_node = new_node_bin(ND_ADD, var_node, index);
+    Node *deref_node = new_node_unary(ND_DEREF, array_access_node);
+    Node *assign_node = new_node(ND_ASSIGN);
+    assign_node->lhs = deref_node;
+    assign_node->rhs = e;
+    if (head) {
+      tail->next = assign_node;
+      tail = assign_node;
+    } else {
+      head = assign_node;
+      tail = head;
+    }
+  }
+  return head;
+}
+
 // 文をパーズする
 // stmt       = expr ";"
-//            | type "*"* ident ("[" num "]")? ("=" expr)? ";"
+//            | type "*"* ident ("[" num "]")? ("=" (array_lit | expr))? ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
@@ -213,16 +247,22 @@ Node *stmt() {
     register_var(tok->str, tok->len, head);
 
     if (consume("=")) {
-      // int x = 3 のような形の初期化式は
-      // int x と x = 3 の二つの文に分解する
       Node *var_node = new_node(ND_LVAR);
       LVar *lvar = find_lvar(tok);
       var_node->offset = lvar->offset;
       var_node->var = lvar;
       var_node->type = lvar->type;
 
-      Node *assign_node = new_node_bin(ND_ASSIGN, var_node, expr());
-      node->next = assign_node;
+      if (consume("{")) {
+        // 配列の初期化式
+        Node *array_lit_node = array_lit(var_node);
+        node->next = array_lit_node;
+      } else {
+        // int x = 3 のような形の初期化式
+        // int x と x = 3 の二つの文に分解する
+        Node *assign_node = new_node_bin(ND_ASSIGN, var_node, expr());
+        node->next = assign_node;
+      }
     }
     expect(";");
   // block
