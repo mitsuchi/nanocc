@@ -351,7 +351,9 @@ void gen(Node *node) {
 
   switch (node->kind) {
   case ND_ADD:
-    if (node->lhs->kind == ND_LVAR || node->lhs->kind == ND_ADDR ) {
+    if (node->lhs->kind == ND_LVAR
+        || node->lhs->kind == ND_GVAR
+        || node->lhs->kind == ND_ADDR ) {
       // 足し算の左辺が変数のときだけ
       if (node->lhs->type->kind == PTR || node->lhs->type->kind == ARRAY) {
         printf("  imul rdi, %d\n", type_size(node->lhs->type->ptr_to));
@@ -361,7 +363,9 @@ void gen(Node *node) {
     break;
   case ND_SUB:
     // 左辺 - 右辺
-    if (node->lhs->kind == ND_LVAR || node->lhs->kind == ND_ADDR ) {
+    if (node->lhs->kind == ND_LVAR
+        || node->lhs->kind == ND_GVAR
+        || node->lhs->kind == ND_ADDR ) {
       // 足し算の左辺が変数のときだけ
       if (node->lhs->type->kind == PTR || node->lhs->type->kind == ARRAY) {
         printf("  imul rdi, %d\n", type_size(node->lhs->type->ptr_to));
