@@ -181,6 +181,7 @@ String *consume_string();
 // type
 Type *new_type(int kind);
 Type *append_type(int kind, Type **head, Type **tail);
+char *type_name(Type *type);
 
 // var
 LVar *find_lvar(Token *tok);
@@ -197,3 +198,6 @@ Node *new_node_string(String *string);
 
 // 入力ファイル名
 char *filename;
+
+// ASTを表示する
+void print_ast();

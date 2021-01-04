@@ -39,3 +39,15 @@ int type_size (Type *type) {
   }
   error("unreachable: type_size");
 }
+
+char *type_name(Type *type) {
+  if (type->kind == INT) {
+    return "int";
+  } else if (type->kind == CHAR) {
+    return "char";
+  } else if (type->kind == PTR) {
+    return "pointer to";
+  } else if (type->kind == ARRAY) {
+    return "array of";
+  }
+}

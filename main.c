@@ -16,11 +16,19 @@ char *read_file(char *path);
 // argc はコンパイラーへの引数の数(+1)
 // argv は引数の文字列の先頭へのポインターを納めた配列へのポインター
 int main(int argc, char **argv) {
-  if (argc != 2) {
+  if (argc <= 1 || 4 <= argc) {
     fprintf(stderr, "引数の個数が正しくありません\n");
     return 1;
   }
 
+  // 第二引数をオプションにする
+  char *option;
+  if (argc == 3) {
+    option = argv[2];
+  } else {
+    option = "";
+  }
+  
   // エラー表示に使うためにプログラムの先頭を指しておく
   filename = argv[1];
   user_input = read_file(filename);
@@ -30,6 +38,11 @@ int main(int argc, char **argv) {
 
   // 全体を文の並びとして構文解析する
   program();
+
+  if (strcmp(option, "-d") == 0) { // debug
+    print_ast();
+    return 0;
+  }
 
   // intel記法を使う
   printf(".intel_syntax noprefix\n");
