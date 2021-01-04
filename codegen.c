@@ -3,25 +3,31 @@
 // ラベルの末尾につける通し番号
 int label_id = 1;
 
-// rax の指す値を raxレジスタに持ってくる
+// rax の指すアドレスから、必要なバイト数分だけraxレジスタに読み込む
 // type は値の型
 void load(Type *type) {
+  if (type->kind == ARRAY) {
+    type = type->ptr_to;
+  }
   if (type_size(type) == 4) {
     printf("  mov eax, DWORD PTR [rax]\n");
   } else if (type_size(type) == 1) {
-    printf("  movsx ecx, BYTE PTR [rax]\n");
+    printf("  movsx rax, BYTE PTR [rax]\n");
   } else {
     printf("  mov rax, [rax]\n");
   }
 }
 
-// rax の指すアドレスに、rdi の値を入れる
+// rax の指すアドレスに、rdi の値を必要なバイト数分だけ書き込む
 // type は値の型
 void store(Type *type) {
+  if (type->kind == ARRAY) {
+    type = type->ptr_to;
+  }  
   if (type_size(type) == 4) {
     printf("  mov DWORD PTR [rax], edi\n");
   } else if (type_size(type) == 1) {
-    printf("  mov BYTE PTR [rax], cl\n");
+    printf("  mov BYTE PTR [rax], dil\n");
   } else {
     printf("  mov [rax], rdi\n");
   }
@@ -89,7 +95,7 @@ void gen(Node *node) {
     // 配列以外ならアドレスの指す値を持ってくる
     // 左辺値の指すアドレスを rax に持ってくる
     printf("  pop rax\n");
-    // rax の指すアドレスにある値を rax に持ってくる
+    // rax の指すアドレスにある値を、変数の型に応じたバイト数だけ rax に持ってくる
     load(node->type);
   // ローカル変数
   case ND_LVAR:
@@ -102,7 +108,7 @@ void gen(Node *node) {
     // 配列以外ならアドレスの指す値を持ってくる
     // 左辺値の指すアドレスを rax に持ってくる
     printf("  pop rax\n");
-    // rax の指すアドレスにある値を rax に持ってくる
+    // rax の指すアドレスにある値を、変数の型に応じたバイト数だけ rax に持ってくる
     load(node->type);
     // 持ってきた値をスタックに積む
     printf("  push rax\n");
@@ -120,8 +126,8 @@ void gen(Node *node) {
     // 左辺値のアドレスを rax に持ってくる
     printf("  pop rax\n");
     // 左辺値のアドレスに右辺値の値を入れる
-    // rax の指すアドレスに、rdi の値を入れる
-    store(node->rhs->type);
+    // rax の指すアドレスに、変数の型に応じたバイト数だけ rdi の値を入れる
+    store(node->lhs->type);
     // 右辺値をスタックに積む。つまり代入式の値は右辺値。
     printf("  push rdi\n");
     return; 
@@ -319,8 +325,8 @@ void gen(Node *node) {
     gen(node->lhs);
     // 値を rax に持ってくる
     printf("  pop rax\n");
-    // rax の指すアドレスにある値を rax に持ってくる
-    load(node->lhs->type);
+    // rax の指すアドレスにある値を、ポインターの指す型に応じたバイト数だけ rax に持ってくる
+    load(node->lhs->type->ptr_to);
     // rax をスタックに積む
     printf("  push rax\n");
     return;
