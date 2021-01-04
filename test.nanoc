@@ -98,6 +98,8 @@ int main() {
      rari 
      po   */
   // hoge hoge
+  int xten = 10;
+  assert(10, xten, "int x = 10; x");
   return ng;
 }
 

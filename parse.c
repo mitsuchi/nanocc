@@ -6,7 +6,7 @@
 //            = ( type "*"* ident ("(" (type "*"* ident)? ("," type "*"* ident)* ")")? "{" stmt* "}"
 //            | type "*"* ident ("[" num "]")? ";" )*
 // stmt       = expr ";"
-//            | type "*"* ident ("[" num "]")? ";"
+//            | type "*"* ident ("[" num "]")? ("=" expr)? ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
@@ -132,6 +132,11 @@ Node *global_var_or_funcs() {
       last->next = cur_node;
       // 最後を交代する
       last = cur_node;
+      while (last->next) {
+        // stmt() がノードのリストを返すことがありうるので、
+        // 末尾まで移動しておく
+        last = last->next;
+      }
     }
     // 終末の次はNULLにしておく
     last->next = NULL;
@@ -161,7 +166,7 @@ Node *global_var_or_funcs() {
 
 // 文をパーズする
 // stmt       = expr ";"
-//            | type "*"* ident ("[" num "]")? ";"
+//            | type "*"* ident ("[" num "]")? ("=" expr)? ";"
 //            | "{" stmt* "}"
 //            | "return" expr ";"
 //            | "if" "(" expr ")" stmt ("else" stmt)?
@@ -169,7 +174,8 @@ Node *global_var_or_funcs() {
 //            | "for" "(" expr? ";" expr? ";" expr? ")" stmt
 Node *stmt() {
   Node *node;
-  // 変数定義 type "*"* ident ("[" num "]")? ";"
+  // 変数定義 
+  // type "*"* ident ("[" num "]")? ("=" expr)? ";"
   int type_kind = consume_type();
   if (type_kind) {
     // 次には "*"* が来る
@@ -200,6 +206,18 @@ Node *stmt() {
     // ローカル変数に登録する
     register_var(tok->str, tok->len, head);
 
+    if (consume("=")) {
+      // int x = 3 のような形の初期化式は
+      // int x と x = 3 の二つの文に分解する
+      Node *var_node = new_node(ND_LVAR);
+      LVar *lvar = find_lvar(tok);
+      var_node->offset = lvar->offset;
+      var_node->var = lvar;
+      var_node->type = lvar->type;
+
+      Node *assign_node = new_node_bin(ND_ASSIGN, var_node, expr());
+      node->next = assign_node;
+    }
     expect(";");
   // block
   } else if (consume("{")) {
@@ -215,6 +233,11 @@ Node *stmt() {
       last->next = cur_node;
       // 最後を交代する
       last = cur_node;
+      while (last->next) {
+        // stmt() がノードのリストを返すことがありうるので、
+        // 末尾まで移動しておく
+        last = last->next;
+      }
     }
     // 終末の次はNULLにしておく
     last->next = NULL;
