@@ -5,8 +5,9 @@ void print_node(Node *node, int depth);
 
 // グローバル変数と、各関数のローカル変数と本体を表示する
 void print_ast() {
-  printf("global vars\n");
   LVar *gv = global_var_list;
+  if (gv)
+    printf("global vars\n");
   while (gv) {
     // 変数名
     printf("- %s: ", gv->name);
@@ -24,7 +25,7 @@ void print_ast() {
   }
 
   // 先頭の関数定義から順に表示
-  printf("\nfunctions\n");
+  printf("functions\n");
   for (int i = 0; func_defs[i]; i++) {
     print_func(func_defs[i]);
   }
@@ -181,7 +182,14 @@ void print_node(Node *node, int depth) {
   case ND_ADDR:
     printf("- address\n");
     print_node(node->lhs, depth + 2);
+    break;
   case ND_STRING:
     printf("- string: %s\n", node->string->str);
+    break;
+  case ND_DECL:
+    printf("- local var decl\n");
+    break;
+  default:
+    printf("- hoge: %d\n", node->kind);
   }
 }
