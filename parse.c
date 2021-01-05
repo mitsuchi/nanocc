@@ -176,10 +176,8 @@ Node *block() {
 Node *new_node_array_assign(Node *var, Node *index, Node *expr) {
   Node *array_access_node = new_node_bin(ND_ADD, var, index);
   Node *deref_node = new_node_unary(ND_DEREF, array_access_node);
-  Node *assign_node = new_node(ND_ASSIGN);
-  assign_node->lhs = deref_node;
-  assign_node->rhs = expr;
-
+  Node *assign_node = new_node_bin(ND_ASSIGN, deref_node, expr);
+  
   return assign_node;
 }
 
