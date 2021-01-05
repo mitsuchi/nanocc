@@ -33,7 +33,7 @@ Node *global_var_or_funcs();
 Node *func_def();
 Node *stmt();
 Node *block();
-Node *array_lit(Node *var_node);
+Node *array_lit(Node *var_node, int len);
 Node *expr();
 Node *assign();
 Node *equality();
@@ -172,9 +172,34 @@ Node *block() {
   return node;
 }
 
+// x[i] = e のノードを作る
+Node *new_node_array_assign(Node *var, Node *index, Node *expr) {
+  Node *array_access_node = new_node_bin(ND_ADD, var, index);
+  Node *deref_node = new_node_unary(ND_DEREF, array_access_node);
+  Node *assign_node = new_node(ND_ASSIGN);
+  assign_node->lhs = deref_node;
+  assign_node->rhs = expr;
+
+  return assign_node;
+}
+
+// 新しいノードをリストの末尾につなげる
+void append_node(Node **head, Node **tail, Node *new_node) {
+  if (*head) {
+    (*tail)->next = new_node;
+    *tail = new_node;
+  } else {
+    *head = new_node;
+    *tail = *head;
+  }
+}
+
 // 配列の初期化式をパーズする
 // array_lit  = "{" (expr ("," expr)*)? "}"
-Node *array_lit(Node *var_node) {
+// int x[5] = {4,5,6} なら
+// int x[5]; x[0] = 4; x[1] = 5; x[2] = 6; x[3] = 0; x[4] = 0
+// に展開するので、変数 var_node と配列のサイズ len を受け取る
+Node *array_lit(Node *var_node, int len) {
   Node *head = NULL;
   Node *tail = NULL;
   int i = 0;
@@ -185,22 +210,23 @@ Node *array_lit(Node *var_node) {
     consume(",");
     // int x[] = {4, 5} のようなコードは
     // int x[2]; x[0] = 4; x[1] = 5; のように分解する
-    // x[i] = e の部分を作る
-    Node *index = new_node_num(i);
+    // x[i] = e を表すノードを作る
+    Node *assign_node = new_node_array_assign(var_node, new_node_num(i), e);
+    // 文の末尾につなげる
+    append_node(&head, &tail, assign_node);
     i++;
-    Node *array_access_node = new_node_bin(ND_ADD, var_node, index);
-    Node *deref_node = new_node_unary(ND_DEREF, array_access_node);
-    Node *assign_node = new_node(ND_ASSIGN);
-    assign_node->lhs = deref_node;
-    assign_node->rhs = e;
-    if (head) {
-      tail->next = assign_node;
-      tail = assign_node;
-    } else {
-      head = assign_node;
-      tail = head;
-    }
   }
+  // 初期化式に渡された要素の個数よりも配列のサイズのほうが大きい場合は
+  // 残りを 0 で埋める
+  while (i < len) {
+    // x[i] = 0 を表すノードを作る
+    Node *assign_node = new_node_array_assign(
+      var_node, new_node_num(i), new_node_num(0));
+    // 文の末尾につなげる
+    append_node(&head, &tail, assign_node);      
+    i++;
+  }
+
   return head;
 }
 
@@ -265,7 +291,7 @@ Node *stmt() {
           error_at(token->str, "変数が配列ではありません");
         }
         // 配列の初期化式
-        Node *array_lit_node = array_lit(var_node);
+        Node *array_lit_node = array_lit(var_node, head->array_size);
         node->next = array_lit_node;
         head->array_size = node_list_length(array_lit_node);
       } else {
